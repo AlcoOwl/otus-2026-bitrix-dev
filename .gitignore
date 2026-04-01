@@ -71,10 +71,11 @@
 /telephony/
 /terminal/
 /timeman/
-/upload/
 /urlrewrite.php
 /ustat.php
 /vibe/
 /vote-result/
 /workgroups/
+
 /vendor/
+/upload/
