@@ -1,5 +1,10 @@
 {
     "require": {
         "symfony/var-dumper": "^7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Otus\\": "local/php_interface/src/"
+        }
     }
 }
