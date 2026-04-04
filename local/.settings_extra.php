@@ -10,7 +10,7 @@ return[
             'assertion_throws_exception' => true,
             'assertion_error_type' => 256,
             'log' => [
-                'class_name' => \Otus\Debug::class,
+                'class_name' => \Otus\OtusExceptionLog::class,
             ]
         )
     ]
