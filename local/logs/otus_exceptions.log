@@ -3,3 +3,18 @@ Division by zero (0)
 /home/bitrix/www/local/homeworks/homework2/writeexception.php:5
 ----------
 
+OTUS - 2026-04-05 11:46:08 - Host: localhost - UNCAUGHT_EXCEPTION - [DivisionByZeroError] 
+Division by zero (0)
+/home/bitrix/www/local/homeworks/homework2/writeexception.php:5
+----------
+
+OTUS - 2026-04-05 11:48:38 - Host: localhost - UNCAUGHT_EXCEPTION - [DivisionByZeroError] 
+Division by zero (0)
+/home/bitrix/www/local/homeworks/homework2/writeexception.php:5
+----------
+
+OTUS - 2026-04-05 12:06:36 - Host: localhost - UNCAUGHT_EXCEPTION - [DivisionByZeroError] 
+Division by zero (0)
+/home/bitrix/www/local/homeworks/homework2/writeexception.php:5
+----------
+

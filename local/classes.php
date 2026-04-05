@@ -15,11 +15,13 @@ $classes = [
         'id' => 'otus-exception-log',
         'name' => 'Otus\\OtusExceptionLog',
         'file' => 'OtusExceptionLog.php',
-        'description' => 'Пользовательский логгер системных исключений Битрикс. Наследуется от FileExceptionHandlerLog и переопределяет путь к файлу лога по умолчанию.',
+        'description' => 'Пользовательский логгер системных исключений Битрикс. Наследуется от FileExceptionHandlerLog, задает собственный файл лога по умолчанию и добавляет префикс OTUS в строки лога.',
         'methods' => [
-            'initialize(array $options)',
-            'write($exception, $logType)',
-            'DEFAULT_LOG_FILE = "local/logs/otus_exceptions.log"',
+            'initialize(array $options): void',
+            'write($exception, $logType): void',
+        ],
+        'constants' => [
+            'DEFAULT_LOG_FILE = "/local/logs/otus_exceptions.log"',
         ],
     ],
     [
@@ -104,6 +106,14 @@ $classes = [
                     <li><code><?= htmlspecialchars($method, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></code></li>
                 <?php endforeach; ?>
             </ul>
+            <?php if (!empty($class['constants'])): ?>
+                <p><strong>Константы:</strong></p>
+                <ul>
+                    <?php foreach ($class['constants'] as $constant): ?>
+                        <li><code><?= htmlspecialchars($constant, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></code></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
         </section>
     <?php endforeach; ?>
 </main>
