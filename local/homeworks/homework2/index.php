@@ -83,8 +83,11 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
         <a href="clearlog.php">Очистка лога из п2 ДЗ</a>
     </li>
     <li class="list-group-item">
-        <a href="/bitrix/admin/fileman_file_edit.php?path=%2Flocal%2Fphp_interface%2Fsrc%2FDebug.php&full_src=Y
-        &site=s1&lang=ru&&filter=Y&set_filter=Y">Файл с классом для выполнения п2 ДЗ</a>
+        <a
+            href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/Debug.php"
+            target="_blank"
+            rel="noopener noreferrer"
+        >Файл с классом для выполнения п2 ДЗ</a>
     </li>
 </ul>
 
@@ -100,8 +103,11 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
         <a href="clearexception.php">Очистить лог исключений из п3 ДЗ</a>
     </li>
     <li class="list-group-item">
-        <a href="/bitrix/admin/fileman_file_edit.php?path=%2Flocal%2Fphp_interface%2Fsrc%2FOtusExceptionLog.php
-        &full_src=Y&site=s1&lang=ru&&filter=Y&set_filter=Y">Файл с классом для выполнения п3 ДЗ</a>
+        <a
+            href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/OtusExceptionLog.php"
+            target="_blank"
+            rel="noopener noreferrer"
+        >Файл с классом для выполнения п3 ДЗ</a>
     </li>
 </ul>
 
