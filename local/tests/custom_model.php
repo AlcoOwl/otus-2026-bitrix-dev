@@ -63,7 +63,6 @@ try {
         ])
         ->setOrder(['MANUFACTURER.ELEMENT.NAME' => 'desc'])
         ->fetchCollection();
-
     $manufacturerCountryMap = Manufacturer::getMultiplePropertyValuesMap(
         array_map(
             static fn($car) => $car->get('MANUFACTURER_ID'),

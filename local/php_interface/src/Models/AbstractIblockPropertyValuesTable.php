@@ -98,7 +98,7 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
         $fieldName = strtoupper($fieldName);
         $elementIds = array_values(array_unique(array_filter(array_map('intval', $elementIds))));
 
-        if (!$elementIds || !static::isMultiplePropertyField($fieldName)) {
+        if (!$elementIds || empty(static::PROPERTY_FIELDS[$fieldName]['multiple'])) {
             return [];
         }
 
@@ -114,12 +114,29 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
         $valuesMap = [];
 
         foreach ($objects as $object) {
-            $valuesMap[$object->get('IBLOCK_ELEMENT_ID')] = static::extractMultiplePropertyValues($object, $fieldName);
+            $values = [];
+            $collection = $object->get($fieldName);
+
+            if ($collection) {
+                foreach ($collection->getAll() as $item) {
+                    $values[] = $item->get('VALUE');
+                }
+            }
+
+            $valuesMap[$object->get('IBLOCK_ELEMENT_ID')] = $values;
         }
 
         return $valuesMap;
     }
 
+    /**
+     * Создает объект поля базы данных на основе заданного типа.
+     *
+     * @param string $fieldName Имя поля, которое будет использоваться в базе данных.
+     * @param string $fieldType Тип поля, определяющий его конфигурацию (например, integer, float, string и др.).
+     * @return Field Объект поля, соответствующий указанному типу.
+     * @throws SystemException Исключение выбрасывается, если указан неизвестный тип поля.
+     */
     protected static function createPropertyField(string $fieldName, string $fieldType): Field
     {
         return match ($fieldType) {
@@ -135,27 +152,14 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
         };
     }
 
-    protected static function extractMultiplePropertyValues(object $object, string $fieldName): array
-    {
-        $values = [];
-        $collection = $object->get($fieldName);
-
-        if (!$collection) {
-            return $values;
-        }
-
-        foreach ($collection->getAll() as $item) {
-            $values[] = $item->get('VALUE');
-        }
-
-        return $values;
-    }
-
-    protected static function isMultiplePropertyField(string $fieldName): bool
-    {
-        return !empty(static::PROPERTY_FIELDS[$fieldName]['multiple']);
-    }
-
+    /**
+     * Создает отношение "один ко многим" для свойства с несколькими значениями.
+     *
+     * @param string $fieldName Название поля, представляющего связь.
+     * @param string $propertyCode Код свойства, используемого в связи.
+     * @param string $fieldType Тип поля, определяющий тип связи.
+     * @return OneToMany Объект отношения "один ко многим", настроенный для свойства с несколькими значениями.
+     */
     protected static function createMultiplePropertyRelation(
         string $fieldName,
         string $propertyCode,
@@ -168,6 +172,14 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
         );
     }
 
+    /**
+     * Создает и кэширует сущность для обработки множественных значений свойства инфоблока.
+     *
+     * @param string $fieldName Имя поля, связанного со значением свойства.
+     * @param string $propertyCode Символьный код свойства.
+     * @param string $fieldType Тип данных значения свойства.
+     * @return Entity Скомпилированная сущность, соответствующая множественным значениям указанного свойства.
+     */
     protected static function getMultiplePropertyEntity(
         string $fieldName,
         string $propertyCode,
@@ -200,6 +212,12 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
         return static::$multiplePropertyEntityCache[$cacheKey];
     }
 
+    /**
+     * Создает ссылку на владельцев свойства с учетом нескольких значений.
+     *
+     * @param int $propertyId Идентификатор свойства.
+     * @return Reference Объект ссылки, настроенный для соединения с владельцами свойства.
+     */
     protected static function createMultiplePropertyOwnerReference(int $propertyId): Reference
     {
         return (new Reference(
@@ -228,6 +246,13 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
         return static::$propertyColumnNameCache[$cacheKey];
     }
 
+    /**
+     * Возвращает идентификатор свойства инфоблока по его символьному коду.
+     *
+     * @param string $propertyCode Символьный код свойства.
+     * @return int Идентификатор свойства.
+     * @throws SystemException Если свойство не найдено.
+     */
     protected static function getPropertyId(string $propertyCode): int
     {
         $cacheKey = static::IBLOCK_ID . ':' . $propertyCode;
@@ -253,6 +278,12 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
         return static::$propertyIdCache[$cacheKey];
     }
 
+    /**
+     * Удаляет сущность по первичному ключу.
+     *
+     * @param mixed $primary Первичный ключ сущности, которую необходимо удалить.
+     * @return DeleteResult Результат операции удаления.
+     */
     public static function delete($primary): DeleteResult
     {
         throw new NotImplementedException();
