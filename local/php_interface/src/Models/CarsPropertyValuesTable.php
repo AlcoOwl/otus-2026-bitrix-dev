@@ -9,6 +9,7 @@ class CarsPropertyValuesTable extends AbstractIblockPropertyValuesTable
         'MANUFACTURER_ID' => [
             'code' => 'MANUFACTURER_ID',
             'type' => 'integer',
+            'multiple' => false,
         ],
     ];
 }

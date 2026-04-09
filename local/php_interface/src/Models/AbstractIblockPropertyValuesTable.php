@@ -12,10 +12,10 @@ use Bitrix\Main\ORM\Fields\BooleanField;
 use Bitrix\Main\ORM\Fields\DateField;
 use Bitrix\Main\ORM\Fields\DatetimeField;
 use Bitrix\Main\ORM\Fields\DecimalField;
-use Bitrix\Main\ORM\Fields\ExpressionField;
 use Bitrix\Main\ORM\Fields\Field;
 use Bitrix\Main\ORM\Fields\FloatField;
 use Bitrix\Main\ORM\Fields\IntegerField;
+use Bitrix\Main\ORM\Fields\Relations\OneToMany;
 use Bitrix\Main\ORM\Fields\Relations\Reference;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\TextField;
@@ -31,9 +31,9 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
     protected static array $multiplePropertyEntityCache = [];
 
     /**
-     * Возвращает название таблицы, сформированное с использованием идентификатора инфоблока.
+     * Возвращает имя таблицы базы данных с единичными свойствами инфоблока (по крайней мере списка).
      *
-     * @return string Название таблицы.
+     * @return string Имя таблицы базы данных.
      */
     public static function getTableName(): string
     {
@@ -73,16 +73,7 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
             $isMultiple = $propertyConfig['multiple'] ?? false;
 
             if ($isMultiple) {
-                $referenceName = $fieldName . '_REF';
-
-                $map[] = (new Reference(
-                    $referenceName,
-                    static::getMultiplePropertyEntity($fieldName, $propertyCode, $fieldType),
-                    Join::on('this.IBLOCK_ELEMENT_ID', 'ref.IBLOCK_ELEMENT_ID')
-                        ->where('ref.IBLOCK_PROPERTY_ID', static::getPropertyId($propertyCode))
-                ))->configureJoinType(Join::TYPE_LEFT);
-                $map[] = new ExpressionField($fieldName, '%s', [$referenceName . '.VALUE']);
-
+                $map[] = static::createMultiplePropertyRelation($fieldName, $propertyCode, $fieldType);
                 continue;
             }
 
@@ -91,6 +82,42 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
         }
 
         return $map;
+    }
+
+    /**
+     * Возвращает карту значений множественных свойств для заданного набора элементов.
+     *
+     * @param array $elementIds Массив идентификаторов элементов, для которых необходимо получить значения свойств.
+     * @param string $fieldName Название поля свойства, значения которого нужно извлечь.
+     *
+     * @return array Ассоциативный массив, где ключами являются идентификаторы элементов,
+     * а значениями — массивы значений множественного свойства.
+     */
+    public static function getMultiplePropertyValuesMap(array $elementIds, string $fieldName): array
+    {
+        $fieldName = strtoupper($fieldName);
+        $elementIds = array_values(array_unique(array_filter(array_map('intval', $elementIds))));
+
+        if (!$elementIds || !static::isMultiplePropertyField($fieldName)) {
+            return [];
+        }
+
+        $objects = static::query()
+            ->setSelect([
+                'IBLOCK_ELEMENT_ID',
+            ])
+            ->whereIn('IBLOCK_ELEMENT_ID', $elementIds)
+            ->fetchCollection();
+
+        $objects->fill($fieldName);
+
+        $valuesMap = [];
+
+        foreach ($objects as $object) {
+            $valuesMap[$object->get('IBLOCK_ELEMENT_ID')] = static::extractMultiplePropertyValues($object, $fieldName);
+        }
+
+        return $valuesMap;
     }
 
     protected static function createPropertyField(string $fieldName, string $fieldType): Field
@@ -106,6 +133,39 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
             'datetime' => new DatetimeField($fieldName),
             default => throw new SystemException('Unknown property field type: ' . $fieldType),
         };
+    }
+
+    protected static function extractMultiplePropertyValues(object $object, string $fieldName): array
+    {
+        $values = [];
+        $collection = $object->get($fieldName);
+
+        if (!$collection) {
+            return $values;
+        }
+
+        foreach ($collection->getAll() as $item) {
+            $values[] = $item->get('VALUE');
+        }
+
+        return $values;
+    }
+
+    protected static function isMultiplePropertyField(string $fieldName): bool
+    {
+        return !empty(static::PROPERTY_FIELDS[$fieldName]['multiple']);
+    }
+
+    protected static function createMultiplePropertyRelation(
+        string $fieldName,
+        string $propertyCode,
+        string $fieldType
+    ): OneToMany {
+        return new OneToMany(
+            $fieldName,
+            static::getMultiplePropertyEntity($fieldName, $propertyCode, $fieldType),
+            'OWNER'
+        );
     }
 
     protected static function getMultiplePropertyEntity(
@@ -128,6 +188,7 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
                     new IntegerField('IBLOCK_ELEMENT_ID'),
                     new IntegerField('IBLOCK_PROPERTY_ID'),
                     static::createPropertyField('VALUE', $fieldType),
+                    static::createMultiplePropertyOwnerReference($propertyId),
                 ],
                 [
                     'namespace' => __NAMESPACE__,
@@ -137,6 +198,16 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
         }
 
         return static::$multiplePropertyEntityCache[$cacheKey];
+    }
+
+    protected static function createMultiplePropertyOwnerReference(int $propertyId): Reference
+    {
+        return (new Reference(
+            'OWNER',
+            static::class,
+            Join::on('this.IBLOCK_ELEMENT_ID', 'ref.IBLOCK_ELEMENT_ID')
+                ->where('this.IBLOCK_PROPERTY_ID', $propertyId)
+        ))->configureJoinType(Join::TYPE_LEFT);
     }
 
     /**
