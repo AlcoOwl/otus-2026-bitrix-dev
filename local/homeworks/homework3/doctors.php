@@ -20,62 +20,129 @@ $procedureFormData = [
     'NAME' => '',
     'PRICE' => '',
 ];
+$doctorFormData = [
+    'FIO' => '',
+    'SPECIALIZATION' => '',
+    'EXPERIENCE' => '',
+    'PROC_ID' => [],
+];
 $procedureFormErrors = [];
+$doctorFormErrors = [];
 $procedureSuccessMessage = '';
+$doctorSuccessMessage = '';
 $shouldOpenProcedureModal = false;
+$shouldOpenDoctorModal = false;
 
 try {
     Loader::includeModule('iblock');
 
-    if (
-        $_SERVER['REQUEST_METHOD'] === 'POST'
-        && ($_POST['action'] ?? '') === 'add_procedure'
-    ) {
-        $procedureFormData['NAME'] = trim((string)($_POST['procedure_name'] ?? ''));
-        $procedureFormData['PRICE'] = trim((string)($_POST['procedure_price'] ?? ''));
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $action = (string)($_POST['action'] ?? '');
+        $isValidSessid = check_bitrix_sessid();
+        $currentErrors = null;
+        $currentEntityApiCode = null;
+        $currentSuccessQueryParam = null;
+        $currentModalFlag = null;
+        $currentPayload = null;
 
-        if (!check_bitrix_sessid()) {
-            $procedureFormErrors[] = 'Сессия истекла. Обновите страницу и попробуйте снова.';
-        }
+        switch ($action) {
+            case 'add_procedure':
+                $currentErrors = &$procedureFormErrors;
+                $currentEntityApiCode = Procedures::API_CODE;
+                $currentSuccessQueryParam = 'procedure_added=Y';
+                $currentModalFlag = &$shouldOpenProcedureModal;
 
-        if ($procedureFormData['NAME'] === '') {
-            $procedureFormErrors[] = 'Введите название процедуры.';
-        }
+                $procedureFormData['NAME'] = trim((string)($_POST['procedure_name'] ?? ''));
+                $procedureFormData['PRICE'] = trim((string)($_POST['procedure_price'] ?? ''));
 
-        if ($procedureFormData['PRICE'] === '') {
-            $procedureFormErrors[] = 'Введите цену процедуры.';
-        } elseif (!is_numeric($procedureFormData['PRICE']) || (int)$procedureFormData['PRICE'] < 0) {
-            $procedureFormErrors[] = 'Цена процедуры должна быть неотрицательным числом.';
-        }
+                if ($procedureFormData['NAME'] === '') {
+                    $procedureFormErrors[] = 'Введите название процедуры.';
+                }
 
-        if (empty($procedureFormErrors)) {
-            $procedureEntity = IblockTable::compileEntity(Procedures::API_CODE);
-
-            if (!$procedureEntity) {
-                $procedureFormErrors[] = 'Не удалось собрать ORM-сущность инфоблока процедур.';
-            } else {
-                $procedureClass = $procedureEntity->getDataClass();
-                $addResult = $procedureClass::add([
+                if ($procedureFormData['PRICE'] === '') {
+                    $procedureFormErrors[] = 'Введите цену процедуры.';
+                } elseif (!is_numeric($procedureFormData['PRICE']) || (int)$procedureFormData['PRICE'] < 0) {
+                    $procedureFormErrors[] = 'Цена процедуры должна быть неотрицательным числом.';
+                }
+                $currentPayload = [
                     'NAME' => $procedureFormData['NAME'],
                     'ACTIVE' => 'Y',
                     'PRICE' => (int)$procedureFormData['PRICE'],
-                ]);
+                ];
+                break;
 
-                if ($addResult->isSuccess()) {
-                    LocalRedirect($APPLICATION->GetCurPageParam('procedure_added=Y', ['procedure_added']));
+            case 'add_doctor':
+                $currentErrors = &$doctorFormErrors;
+                $currentEntityApiCode = Doctors::API_CODE;
+                $currentSuccessQueryParam = 'doctor_added=Y';
+                $currentModalFlag = &$shouldOpenDoctorModal;
+
+                $doctorFormData['FIO'] = trim((string)($_POST['doctor_fio'] ?? ''));
+                $doctorFormData['SPECIALIZATION'] = trim((string)($_POST['doctor_specialization'] ?? ''));
+                $doctorFormData['EXPERIENCE'] = trim((string)($_POST['doctor_experience'] ?? ''));
+                $doctorFormData['PROC_ID'] = array_values(array_unique(array_filter(array_map(
+                    'intval',
+                    (array)($_POST['doctor_proc_id'] ?? [])
+                ))));
+
+                if ($doctorFormData['FIO'] === '') {
+                    $doctorFormErrors[] = 'Введите ФИО врача.';
                 }
 
-                $procedureFormErrors = array_merge($procedureFormErrors, $addResult->getErrorMessages());
-            }
+                if ($doctorFormData['SPECIALIZATION'] === '') {
+                    $doctorFormErrors[] = 'Введите специализацию.';
+                }
+
+                if ($doctorFormData['EXPERIENCE'] === '') {
+                    $doctorFormErrors[] = 'Введите стаж.';
+                } elseif (!is_numeric($doctorFormData['EXPERIENCE']) || (int)$doctorFormData['EXPERIENCE'] < 0) {
+                    $doctorFormErrors[] = 'Стаж должен быть неотрицательным числом.';
+                }
+                $currentPayload = [
+                    'NAME' => $doctorFormData['SPECIALIZATION'],
+                    'ACTIVE' => 'Y',
+                    'FIO' => $doctorFormData['FIO'],
+                    'EXPERIENCE' => (int)$doctorFormData['EXPERIENCE'],
+                    'PROC_ID' => $doctorFormData['PROC_ID'],
+                ];
+                break;
         }
 
-        if (!empty($procedureFormErrors)) {
-            $shouldOpenProcedureModal = true;
+        if (is_array($currentErrors)) {
+            if (!$isValidSessid) {
+                $currentErrors[] = 'Сессия истекла. Обновите страницу и попробуйте снова.';
+            }
+
+            if (empty($currentErrors) && $currentEntityApiCode !== null && is_array($currentPayload)) {
+                $entity = IblockTable::compileEntity($currentEntityApiCode);
+
+                if (!$entity) {
+                    $currentErrors[] = 'Не удалось собрать ORM-сущность инфоблока.';
+                } else {
+                    $entityClass = $entity->getDataClass();
+                    $addResult = $entityClass::add($currentPayload);
+
+                    if ($addResult->isSuccess()) {
+                        $queryParamName = strtok($currentSuccessQueryParam, '=');
+                        LocalRedirect($APPLICATION->GetCurPageParam($currentSuccessQueryParam, [$queryParamName]));
+                    }
+
+                    $currentErrors = array_merge($currentErrors, $addResult->getErrorMessages());
+                }
+            }
+
+            if (!empty($currentErrors) && is_bool($currentModalFlag)) {
+                $currentModalFlag = true;
+            }
         }
     }
 
     if (($_GET['procedure_added'] ?? '') === 'Y') {
         $procedureSuccessMessage = 'Процедура успешно добавлена.';
+    }
+
+    if (($_GET['doctor_added'] ?? '') === 'Y') {
+        $doctorSuccessMessage = 'Врач успешно добавлен.';
     }
 
     $doctorsCollection = Doctors::query()
@@ -136,9 +203,23 @@ try {
 ?>
 
 <div class="container py-4">
+    <?php if ($doctorSuccessMessage !== ''): ?>
+        <div class="alert alert-success" role="alert">
+            <?= htmlspecialcharsbx($doctorSuccessMessage) ?>
+        </div>
+    <?php endif; ?>
+
     <?php if ($procedureSuccessMessage !== ''): ?>
         <div class="alert alert-success" role="alert">
             <?= htmlspecialcharsbx($procedureSuccessMessage) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!empty($doctorFormErrors)): ?>
+        <div class="alert alert-danger" role="alert">
+            <?php foreach ($doctorFormErrors as $error): ?>
+                <div><?= htmlspecialcharsbx($error) ?></div>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
@@ -157,6 +238,8 @@ try {
             class="btn btn-primary d-inline-flex align-items-center justify-content-center ms-4"
             style="width: 44px; height: 44px; border-radius: 4px; font-size: 28px; line-height: 3;"
             aria-label="Добавить врача"
+            data-bs-toggle="modal"
+            data-bs-target="#addDoctorModal"
         > <b>+</b> </button>
     </div>
 
@@ -230,6 +313,89 @@ try {
     <?php endif; ?>
 </div>
 
+<div class="modal fade" id="addDoctorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <form method="post">
+                <?= bitrix_sessid_post() ?>
+                <input type="hidden" name="action" value="add_doctor">
+
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5 mb-0">Добавление врача</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="doctor-fio">ФИО</label>
+                        <input
+                            id="doctor-fio"
+                            type="text"
+                            name="doctor_fio"
+                            class="form-control"
+                            value="<?= htmlspecialcharsbx($doctorFormData['FIO']) ?>"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="doctor-specialization">Специализация</label>
+                        <input
+                            id="doctor-specialization"
+                            type="text"
+                            name="doctor_specialization"
+                            class="form-control"
+                            value="<?= htmlspecialcharsbx($doctorFormData['SPECIALIZATION']) ?>"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="doctor-experience">Стаж</label>
+                        <input
+                            id="doctor-experience"
+                            type="number"
+                            name="doctor_experience"
+                            class="form-control"
+                            min="0"
+                            step="1"
+                            value="<?= htmlspecialcharsbx($doctorFormData['EXPERIENCE']) ?>"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label" for="doctor-procedures">Осуществляемые процедуры</label>
+                        <select
+                            id="doctor-procedures"
+                            name="doctor_proc_id[]"
+                            class="form-select"
+                            size="8"
+                            multiple
+                        >
+                            <?php foreach ($proceduresData as $procedure): ?>
+                                <option
+                                    value="<?= (int)$procedure['IBLOCK_ELEMENT_ID'] ?>"
+                                    <?php if (in_array((int)$procedure['IBLOCK_ELEMENT_ID'], $doctorFormData['PROC_ID'], true)): ?>
+                                        selected
+                                    <?php endif; ?>
+                                >
+                                    <?= htmlspecialcharsbx((string)$procedure['NAME']) ?> (<?= (int)$procedure['PRICE'] ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="addProcedureModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -279,17 +445,30 @@ try {
     </div>
 </div>
 
-<?php if ($shouldOpenProcedureModal): ?>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var modalElement = document.getElementById('addProcedureModal');
+<script>
+<?php if ($shouldOpenDoctorModal): ?>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalElement = document.getElementById('addDoctorModal');
 
-            if (!modalElement) {
-                return;
-            }
+        if (!modalElement) {
+            return;
+        }
 
-            var modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        });
-    </script>
+        var modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    });
 <?php endif; ?>
+
+<?php if ($shouldOpenProcedureModal): ?>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalElement = document.getElementById('addProcedureModal');
+
+        if (!modalElement) {
+            return;
+        }
+
+        var modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    });
+<?php endif; ?>
+</script>
