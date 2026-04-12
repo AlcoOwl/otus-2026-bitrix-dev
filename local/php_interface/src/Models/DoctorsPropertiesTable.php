@@ -5,6 +5,7 @@ namespace Otus\Models;
 class DoctorsPropertiesTable extends AbstractIblockPropertyValuesTable
 {
     const int IBLOCK_ID = 20;
+    public const string API_CODE = 'doctors';
     protected const array PROPERTY_FIELDS = [
         'FIO' => [
             'code' => 'FIO',
