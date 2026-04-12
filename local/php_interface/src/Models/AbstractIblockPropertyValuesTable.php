@@ -73,7 +73,7 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
             $isMultiple = $propertyConfig['multiple'] ?? false;
 
             if ($isMultiple) {
-                $map[] = static::createMultiplePropertyRelation($fieldName, $propertyCode, $fieldType);
+                $map[] = static::createMultiplePropertyRelation($fieldName, $propertyCode, $fieldType, $propertyConfig);
                 continue;
             }
 
@@ -163,11 +163,12 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
     protected static function createMultiplePropertyRelation(
         string $fieldName,
         string $propertyCode,
-        string $fieldType
+        string $fieldType,
+        array $propertyConfig = []
     ): OneToMany {
         return new OneToMany(
             $fieldName,
-            static::getMultiplePropertyEntity($fieldName, $propertyCode, $fieldType),
+            static::getMultiplePropertyEntity($fieldName, $propertyCode, $fieldType, $propertyConfig),
             'OWNER'
         );
     }
@@ -183,25 +184,31 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
     protected static function getMultiplePropertyEntity(
         string $fieldName,
         string $propertyCode,
-        string $fieldType
+        string $fieldType,
+        array $propertyConfig = []
     ): Entity {
         $propertyId = static::getPropertyId($propertyCode);
         $cacheKey = static::IBLOCK_ID . ':' . $propertyId;
 
         if (!isset(static::$multiplePropertyEntityCache[$cacheKey])) {
             $entityName = 'Iblock' . static::IBLOCK_ID . $fieldName . 'MultiplePropertyValue';
+            $fields = [
+                (new IntegerField('ID'))
+                    ->configurePrimary()
+                    ->configureAutocomplete(),
+                new IntegerField('IBLOCK_ELEMENT_ID'),
+                new IntegerField('IBLOCK_PROPERTY_ID'),
+                static::createPropertyField('VALUE', $fieldType),
+                static::createMultiplePropertyOwnerReference($propertyId),
+            ];
+
+            if (!empty($propertyConfig['link_element'])) {
+                $fields[] = static::createMultiplePropertyElementReference();
+            }
 
             static::$multiplePropertyEntityCache[$cacheKey] = Entity::compileEntity(
                 $entityName,
-                [
-                    (new IntegerField('ID'))
-                        ->configurePrimary()
-                        ->configureAutocomplete(),
-                    new IntegerField('IBLOCK_ELEMENT_ID'),
-                    new IntegerField('IBLOCK_PROPERTY_ID'),
-                    static::createPropertyField('VALUE', $fieldType),
-                    static::createMultiplePropertyOwnerReference($propertyId),
-                ],
+                $fields,
                 [
                     'namespace' => __NAMESPACE__,
                     'table_name' => 'b_iblock_element_prop_m' . static::IBLOCK_ID,
@@ -210,6 +217,20 @@ abstract class AbstractIblockPropertyValuesTable extends DataManager
         }
 
         return static::$multiplePropertyEntityCache[$cacheKey];
+    }
+
+    /**
+     * Создает объект связи (reference) для связывания значения свойства с элементом инфоблока.
+     *
+     * @return Reference Объект связи, определяющий соединение значения свойства с элементом инфоблока через таблицу элементов.
+     */
+    protected static function createMultiplePropertyElementReference(): Reference
+    {
+        return (new Reference(
+            'ELEMENT',
+            ElementTable::class,
+            Join::on('this.VALUE', 'ref.ID')
+        ))->configureJoinType(Join::TYPE_LEFT);
     }
 
     /**
