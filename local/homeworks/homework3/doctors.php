@@ -67,7 +67,6 @@ try {
                 $currentPayload = [
                     'NAME' => $procedureFormData['NAME'],
                     'ACTIVE' => 'Y',
-                    'PRICE' => (int)$procedureFormData['PRICE'],
                 ];
                 break;
 
@@ -101,9 +100,6 @@ try {
                 $currentPayload = [
                     'NAME' => $doctorFormData['SPECIALIZATION'],
                     'ACTIVE' => 'Y',
-                    'FIO' => $doctorFormData['FIO'],
-                    'EXPERIENCE' => (int)$doctorFormData['EXPERIENCE'],
-                    'PROC_ID' => $doctorFormData['PROC_ID'],
                 ];
                 break;
         }
@@ -123,8 +119,34 @@ try {
                     $addResult = $entityClass::add($currentPayload);
 
                     if ($addResult->isSuccess()) {
-                        $queryParamName = strtok($currentSuccessQueryParam, '=');
-                        LocalRedirect($APPLICATION->GetCurPageParam($currentSuccessQueryParam, [$queryParamName]));
+                        if ($action === 'add_procedure') {
+                            CIBlockElement::SetPropertyValuesEx(
+                                $addResult->getId(),
+                                Procedures::IBLOCK_ID,
+                                ['PRICE' => (int)$procedureFormData['PRICE']]
+                            );
+                        }
+
+                        if ($action === 'add_doctor') {
+                            CIBlockElement::SetPropertyValuesEx(
+                                $addResult->getId(),
+                                Doctors::IBLOCK_ID,
+                                [
+                                    'FIO' => $doctorFormData['FIO'],
+                                    'EXPERIENCE' => (int)$doctorFormData['EXPERIENCE'],
+                                    'PROC_ID' => $doctorFormData['PROC_ID'],
+                                ]
+                            );
+                        }
+
+                        if (empty($currentErrors)) {
+                            LocalRedirect(
+                                $APPLICATION->GetCurPageParam(
+                                    $currentSuccessQueryParam,
+                                    ['doctor_added', 'procedure_added']
+                                )
+                            );
+                        }
                     }
 
                     $currentErrors = array_merge($currentErrors, $addResult->getErrorMessages());
