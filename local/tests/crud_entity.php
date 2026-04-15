@@ -50,6 +50,25 @@ echo ($dealFactory->getItemsCount());
 
 $contactFactory = Container::getInstance()->getFactory(CCrmOwnerType::Contact);
 
-//$contactFactory->createItem();
+//$newContact = $contactFactory->createItem();
+//$newContact->setUfSnils('653 699 165 50');
+//$newContact->set('NAME', 'Тест');
+//$newContact->save();
+//$addOperation = $contactFactory->getAddOperation($newContact);
+////$addOperation->disableAllChecks();
+//$result = $addOperation->launch();
+//dump($result);
+
+//$updateContact = $contactFactory->getItem(8);
+//$updateContact->set('NAME', 'Не Тест');
+//$updateOperation = $contactFactory->getUpdateOperation($updateContact);
+//$result = $updateOperation->launch();
+//dump($result);
+
+//$deleteContact = $contactFactory->getItem(8);
+//$deleteOperation = $contactFactory->getDeleteOperation($deleteContact);
+//$result = $deleteOperation->launch();
+//dump($result);
+
 
 require_once $_SERVER["DOCUMENT_ROOT"] . "/bitrix/footer.php";

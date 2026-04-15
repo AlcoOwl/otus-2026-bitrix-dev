@@ -10,28 +10,58 @@ $APPLICATION->SetTitle('Тестовые страницы');
 
 Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
 
-$testPages = [
-    [
-        'title' => 'TEST DEBUG',
-        'description' => 'Проверка логирования и замеров времени выполнения.',
-        'href' => '/local/tests/test_debug.php',
+$pageMeta = [
+    'contacts_bindings.php' => [
+        'title' => 'Contacts Bindings',
+        'description' => 'Проверка привязки нескольких контактов к элементу СП через factory.',
     ],
-    [
+    'crud_entity.php' => [
         'title' => 'CRUD CRM Entity',
         'description' => 'Пример чтения CRM-сущностей через фабрику.',
-        'href' => '/local/tests/crud_entity.php',
     ],
-    [
+    'custom_model.php' => [
         'title' => 'Custom ORM Model',
         'description' => 'Вывод связанных полей и runtime reference.',
-        'href' => '/local/tests/custom_model.php',
     ],
-    [
+    'multi.php' => [
         'title' => 'Relations And Multi',
         'description' => 'Тест множественных связей и выборок инфоблока.',
-        'href' => '/local/tests/multi.php',
+    ],
+    'phone_parser.php' => [
+        'title' => 'Phone Parser',
+        'description' => 'Проверка парсинга и нормализации телефонного номера.',
+    ],
+    'test_debug.php' => [
+        'title' => 'TEST DEBUG',
+        'description' => 'Проверка логирования и замеров времени выполнения.',
     ],
 ];
+
+$testPages = [];
+
+foreach (glob(__DIR__ . '/*.php') ?: [] as $filePath) {
+    $fileName = basename($filePath);
+
+    if ($fileName === 'index.php') {
+        continue;
+    }
+
+    $meta = $pageMeta[$fileName] ?? [
+        'title' => ucwords(str_replace('_', ' ', pathinfo($fileName, PATHINFO_FILENAME))),
+        'description' => 'Тестовая страница проекта.',
+    ];
+
+    $testPages[] = [
+        'title' => $meta['title'],
+        'description' => $meta['description'],
+        'href' => '/local/tests/' . $fileName,
+    ];
+}
+
+usort(
+    $testPages,
+    static fn(array $left, array $right): int => strcmp($left['title'], $right['title'])
+);
 ?>
 <div class="container py-5">
     <div class="row justify-content-center">
