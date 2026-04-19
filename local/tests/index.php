@@ -1,5 +1,7 @@
 <?php
 
+//НЕ ДОБАВЛЯТЬ ФАЙЛЫ С ПРЕФИКСОМ sys_
+
 use Bitrix\Main\Page\Asset;
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
