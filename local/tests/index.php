@@ -25,6 +25,14 @@ $pageMeta = [
         'title' => 'Custom ORM Model',
         'description' => 'Вывод связанных полей и runtime reference.',
     ],
+    'db_table.php' => [
+        'title' => 'DB Table',
+        'description' => 'Проверка выборки данных через ORM-таблицу HospitalClientsTable.',
+    ],
+    'highload_test.php' => [
+        'title' => 'Highload Block',
+        'description' => 'Проверка получения highload-блока, компиляции entity и чтения элементов.',
+    ],
     'multi.php' => [
         'title' => 'Relations And Multi',
         'description' => 'Тест множественных связей и выборок инфоблока.',

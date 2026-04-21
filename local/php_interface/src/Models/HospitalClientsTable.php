@@ -3,12 +3,14 @@
 namespace Otus\Models;
 
 use Bitrix\Crm\ContactTable;
+use Bitrix\Main\ArgumentTypeException;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
 use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Bitrix\Main\ORM\Fields\Validators\RegExpValidator;
 use Bitrix\Main\ORM\Query\Join;
 use Bitrix\Main\SystemException;
 
@@ -52,7 +54,7 @@ class HospitalClientsTable extends DataManager
         return [
             'id' => (new IntegerField('id',
                 []
-            ))->configureTitle(Loc::getMessage('CLIENTS_ENTITY_ID_FIELD'))
+            ))->configureTitle(Loc::getMessage('HOSPITAL_CLIENTS_ENTITY_ID_FIELD'))
                 ->configurePrimary(true)
                 ->configureAutocomplete(true)
             ,
@@ -60,34 +62,34 @@ class HospitalClientsTable extends DataManager
                 [
                     'validation' => [__CLASS__, 'validateFirstName']
                 ]
-            ))->configureTitle(Loc::getMessage('CLIENTS_ENTITY_FIRST_NAME_FIELD'))
+            ))->configureTitle(Loc::getMessage('HOSPITAL_CLIENTS_ENTITY_FIRST_NAME_FIELD'))
             ,
             'last_name' => (new StringField('last_name',
                 [
                     'validation' => [__CLASS__, 'validateLastName']
                 ]
-            ))->configureTitle(Loc::getMessage('CLIENTS_ENTITY_LAST_NAME_FIELD'))
+            ))->configureTitle(Loc::getMessage('HOSPITAL_CLIENTS_ENTITY_LAST_NAME_FIELD'))
             ,
             'age' => (new IntegerField('age',
                 []
-            ))->configureTitle(Loc::getMessage('CLIENTS_ENTITY_AGE_FIELD'))
+            ))->configureTitle(Loc::getMessage('HOSPITAL_CLIENTS_ENTITY_AGE_FIELD'))
                 ->configureSize(1)
             ,
             'doctor_id' => (new IntegerField('doctor_id',
                 []
-            ))->configureTitle(Loc::getMessage('CLIENTS_ENTITY_DOCTOR_ID_FIELD'))
+            ))->configureTitle(Loc::getMessage('HOSPITAL_CLIENTS_ENTITY_DOCTOR_ID_FIELD'))
                 ->configureSize(1)
             ,
             'procedure_id' => (new IntegerField('procedure_id',
                 []
-            ))->configureTitle(Loc::getMessage('CLIENTS_ENTITY_PROCEDURE_ID_FIELD'))
+            ))->configureTitle(Loc::getMessage('HOSPITAL_CLIENTS_ENTITY_PROCEDURE_ID_FIELD'))
                 ->configureSize(1)
             ,
             'contact_id' => (new IntegerField('contact_id',
                 []
-            ))->configureTitle(Loc::getMessage('CLIENTS_ENTITY_CONTACT_ID_FIELD'))
+            ))->configureTitle(Loc::getMessage('HOSPITAL_CLIENTS_ENTITY_CONTACT_ID_FIELD'))
             ,
-            (new Reference(
+            'contact' => (new Reference(
                 'CONTACT',
                 ContactTable::class,
                 Join::on('this.contact_id', 'ref.ID'
@@ -100,11 +102,13 @@ class HospitalClientsTable extends DataManager
      * Returns validators for first_name field.
      *
      * @return array
+     * @throws ArgumentTypeException
      */
     public static function validateFirstName(): array
     {
         return [
             new LengthValidator(null, 50),
+            new RegExpValidator('/^[а-яёa-z]+(?:[ -][а-яёa-z]+)*$/iu')
         ];
     }
 
@@ -112,11 +116,13 @@ class HospitalClientsTable extends DataManager
      * Returns validators for last_name field.
      *
      * @return array
+     * @throws ArgumentTypeException
      */
     public static function validateLastName(): array
     {
         return [
             new LengthValidator(null, 50),
+            new RegExpValidator('/^[а-яёa-z]+(?:[ -][а-яёa-z]+)*$/iu')
         ];
     }
 }
