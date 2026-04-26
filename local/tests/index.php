@@ -45,6 +45,10 @@ $pageMeta = [
         'title' => 'TEST DEBUG',
         'description' => 'Проверка логирования и замеров времени выполнения.',
     ],
+    'webform_result.php' => [
+        'title' => 'Webform Result',
+        'description' => 'Проверка результатов CRM-формы и обновления контактов по последнему заполнению.',
+    ],
 ];
 
 $testPages = [];
@@ -52,7 +56,7 @@ $testPages = [];
 foreach (glob(__DIR__ . '/*.php') ?: [] as $filePath) {
     $fileName = basename($filePath);
 
-    if ($fileName === 'index.php') {
+    if ($fileName === 'index.php' || str_starts_with($fileName, 'sys_')) {
         continue;
     }
 
