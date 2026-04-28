@@ -49,6 +49,10 @@ $pageMeta = [
         'title' => 'Webform Result',
         'description' => 'Проверка результатов CRM-формы и обновления контактов по последнему заполнению.',
     ],
+    'webform_result_provider.php' => [
+        'title' => 'Webform Result Provider',
+        'description' => 'Просмотр результатов CRM-форм по контакту через link-таблицу и ORM-провайдер.',
+    ],
 ];
 
 $testPages = [];

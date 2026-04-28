@@ -22,17 +22,17 @@ function dumpScreen($value): void
 	echo '</pre>';
 }
 
-//$formId = 4;
-$formId = 590;
+$formId = 4;
+//$formId = 590;
 
 $doUpdate = -1;
 
-//$contactField = 'UF_CRM_CONTACT_1777197545085';
-$contactField = 'UF_CRM_1706859291';
+$contactField = 'UF_CRM_CONTACT_1777197545085';
+//$contactField = 'UF_CRM_1706859291';
 $sourceField = 'CONTACT_' . $contactField;
 
-//$targetField = 'UF_CRM_1777201306';
-$targetField = 'UF_CRM_1706851895';
+$targetField = 'UF_CRM_1777201306';
+//$targetField = 'UF_CRM_1706851895';
 
 $connection = Application::getConnection();
 $sqlHelper = $connection->getSqlHelper();
