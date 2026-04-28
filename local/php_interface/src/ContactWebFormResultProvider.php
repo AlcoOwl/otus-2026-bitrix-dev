@@ -2,77 +2,46 @@
 
 namespace Otus;
 
-use Bitrix\Main\Loader;
+use Bitrix\Main\ArgumentException;
 use Bitrix\Main\LoaderException;
 use Bitrix\Main\SystemException;
-use Otus\Models\LinkResultFormTable;
+use Otus\Models\ContactWebFormTable;
+use Otus\Models\CrmWebFormTable;
 
 class ContactWebFormResultProvider
 {
     /**
-     * @throws LoaderException
+     * @param int $contactId
+     * @return array
+     * @throws ArgumentException
      * @throws SystemException
      */
     public function getByContactId(int $contactId): array
     {
-        $results = $this->loadContactResults([$contactId]);
-
-        return $results[$contactId] ?? [];
-    }
-
-    /**
-     * @throws LoaderException
-     * @throws SystemException
-     */
-    public function getByContactIds(array $contactIds): array
-    {
-        $contactIds = $this->normalizeContactIds($contactIds);
-        if (empty($contactIds)) {
-            return [];
-        }
-
-        return $this->loadContactResults($contactIds);
-    }
-
-    /**
-     * @throws LoaderException
-     * @throws SystemException
-     */
-    private function loadContactResults(array $contactIds): array
-    {
-        if (!Loader::includeModule('crm')) {
-            throw new SystemException('Module crm is not available.');
-        }
-
         $result = [];
-        foreach ($contactIds as $contactId) {
-            $result[$contactId] = [];
-        }
 
-        $query = LinkResultFormTable::query();
-        $query->setSelect([
-            'RESULT_ID',
-            'CONTACT_ID',
-            'FORM_ID',
-            'ACTIVITY_ID',
-            'RESULT_DATE_INSERT' => 'RESULT.DATE_INSERT',
-            'ACTIVITY_PROVIDER_PARAMS' => 'ACTIVITY.PROVIDER_PARAMS',
-        ]);
-        $query->setFilter([
-            '@CONTACT_ID' => $contactIds,
-        ]);
-        $query->setOrder([
-            'RESULT_ID' => 'DESC'
-        ]);
-
-        $rows = $query->fetchAll();
+        $rows = ContactWebFormTable::query()
+            ->setSelect([
+            'ID',
+            'RESULT_ID' => 'LINK_RESULTS.RESULT_ID',
+            'FORM_ID' => 'LINK_RESULTS.FORM_ID',
+            'ACTIVITY_ID' => 'LINK_RESULTS.ACTIVITY_ID',
+            'RESULT_DATE_INSERT' => 'LINK_RESULTS.RESULT.DATE_INSERT',
+            'ACTIVITY_PROVIDER_PARAMS' => 'LINK_RESULTS.ACTIVITY.PROVIDER_PARAMS',
+            ])
+            ->setFilter([
+                '=ID' => $contactId,
+            ])
+            ->setOrder([
+                'LINK_RESULTS.RESULT_ID' => 'DESC',
+            ])
+            ->fetchAll();
 
         foreach ($rows as $row) {
-            $contactId = (int)$row['CONTACT_ID'];
             $fields = $this->parsePayload($row['ACTIVITY_PROVIDER_PARAMS']);
             $date = $row['RESULT_DATE_INSERT'];
 
-            $result[$contactId][] = [
+            $result[] = [
                 'result_id' => (int)$row['RESULT_ID'],
                 'form_id' => (int)$row['FORM_ID'],
                 'contact_id' => $contactId,
@@ -85,12 +54,84 @@ class ContactWebFormResultProvider
         return $result;
     }
 
-    private function normalizeContactIds(array $contactIds): array
+    /**
+     * @param int $contactId
+     * @return array
+     * @throws ArgumentException
+     * @throws SystemException
+     */
+    public function getFormsByContactId(int $contactId): array
     {
-        $contactIds = array_map('intval', $contactIds);
-        $contactIds = array_filter($contactIds, static fn (int $contactId): bool => $contactId > 0);
+        $rows = ContactWebFormTable::query()
+            ->setSelect([
+                'ID',
+                'FORM_ID' => 'FORMS.ID',
+                'FORM_NAME' => 'FORMS.NAME'
+            ])
+            ->setFilter([
+                '=ID' => $contactId,
+            ])
+            ->setOrder([
+                'FORMS.ID' => 'ASC'
+            ])
+            ->fetchAll();
 
-        return array_values(array_unique($contactIds));
+        $result = [];
+
+        foreach ($rows as $row) {
+            $formId = (int)$row['FORM_ID'];
+            if ($formId <= 0 || isset($result[$formId])) {
+                continue;
+            }
+
+            $result[$formId] = [
+                'form_id' => $formId,
+                'name' => (string)($row['FORM_NAME']),
+            ];
+        }
+
+        return array_values($result);
+    }
+
+    /**
+     * @param int $formId
+     * @return array
+     * @throws ArgumentException
+     * @throws SystemException
+     */
+    public function getContactsByFormId(int $formId): array
+    {
+        $rows = CrmWebFormTable::query()
+            ->setSelect([
+                'ID',
+                'NAME',
+                'CONTACT_ID' => 'CONTACTS.ID',
+                'CONTACT_FULL_NAME' => 'CONTACTS.FULL_NAME',
+            ])
+            ->setFilter([
+                '=ID' => $formId,
+            ])
+            ->setOrder([
+                'CONTACTS.FULL_NAME' => 'ASC',
+                'CONTACTS.ID' => 'ASC',
+            ])
+            ->fetchAll();
+
+        $result = [];
+
+        foreach ($rows as $row) {
+            $contactId = (int)$row['CONTACT_ID'];
+            if ($contactId <= 0 || isset($result[$contactId])) {
+                continue;
+            }
+
+            $result[$contactId] = [
+                'contact_id' => $contactId,
+                'full_name' => (string)$row['CONTACT_FULL_NAME'],
+            ];
+        }
+
+        return array_values($result);
     }
 
     private function parsePayload(array $payload): array

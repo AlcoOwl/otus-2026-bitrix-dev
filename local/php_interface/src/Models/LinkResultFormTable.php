@@ -3,8 +3,6 @@
 namespace Otus\Models;
 
 use Bitrix\Crm\ActivityTable;
-use Bitrix\Crm\ContactTable;
-use Bitrix\Crm\WebForm\Internals\FormTable;
 use Bitrix\Crm\WebForm\Internals\ResultEntityTable;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
@@ -67,36 +65,36 @@ class LinkResultFormTable extends DataManager
                 ->configureTitle(Loc::getMessage('RESULT_ENTITY_FORM_ID_FIELD') ?: 'FORM_ID'),
             'CREATED_AT' => (new DatetimeField('CREATED_AT'))
                 ->configureTitle(Loc::getMessage('RESULT_ENTITY_CREATED_AT_FIELD') ?: 'CREATED_AT'),
-            new Reference(
+            (new Reference(
                 'CONTACT',
-                ContactTable::class,
+                ContactWebFormTable::class,
                 Join::on('this.CONTACT_ID', 'ref.ID')
-            ),
-            new Reference(
+            )) -> configureJoinType(Join::TYPE_INNER),
+            (new Reference(
                 'RESULT',
                 CrmWebFormResultTable::class,
                 Join::on('this.RESULT_ID', 'ref.ID')
-            ),
-            new Reference(
+            )) -> configureJoinType(Join::TYPE_INNER),
+            (new Reference(
                 'RESULT_ENTITY',
                 ResultEntityTable::class,
                 Join::on('this.RESULT_ID', 'ref.RESULT_ID')
                     ->whereColumn('this.CONTACT_ID', 'ref.ITEM_ID')
                     ->whereColumn('this.FORM_ID', 'ref.FORM_ID')
                     ->where('ref.ENTITY_NAME', self::ENTITY_NAME_CONTACT)
-            ),
-            new Reference(
+            )) -> configureJoinType(Join::TYPE_INNER),
+            (new Reference(
                 'ACTIVITY',
                 ActivityTable::class,
                 Join::on('this.ACTIVITY_ID', 'ref.ID')
                     ->where('ref.PROVIDER_ID', self::ACTIVITY_PROVIDER_WEBFORM)
                     ->whereColumn('this.RESULT_ID', 'ref.ASSOCIATED_ENTITY_ID')
-            ),
-            new Reference(
+            )) -> configureJoinType(Join::TYPE_INNER),
+            (new Reference(
                 'FORM',
-                FormTable::class,
+                CrmWebFormTable::class,
                 Join::on('this.FORM_ID', 'ref.ID')
-            ),
+            )) -> configureJoinType(Join::TYPE_INNER),
         ];
     }
 }
