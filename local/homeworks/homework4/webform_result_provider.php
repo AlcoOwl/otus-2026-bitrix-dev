@@ -7,7 +7,7 @@ require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
 
 global $APPLICATION;
 
-$APPLICATION->SetTitle('Тест ContactWebFormResultProvider');
+$APPLICATION->SetTitle('ДЗ #4: Создание своих таблиц БД и написание модели данных к ним');
 
 Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
 Asset::getInstance()->addJs('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js');
@@ -20,7 +20,7 @@ if ($contactId <= 0) {
     <div class="container py-4">
         <div class="alert alert-warning mb-0">
             contact_id is required. Example:
-            <code>/local/tests/webform_result_provider.php?contact_id=123</code>
+            <code>/local/homeworks/homework4/webform_result_provider.php?contact_id=123</code>
         </div>
     </div>
     <?php
