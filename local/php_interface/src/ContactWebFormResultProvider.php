@@ -141,15 +141,32 @@ class ContactWebFormResultProvider
         foreach ($payload['FIELDS'] ?? [] as $field) {
             $code = (string)($field['caption'] ?? $field['code'] ?? '');
             $value = $field['value'] ?? [];
+            $type = strtolower((string)($field['type'] ?? $field['field_type'] ?? ''));
 
             if ($code === '') {
                 continue;
             }
 
             $value = is_array($value) ? array_values($value) : [$value];
+            $value = array_map(
+                static fn($item) => in_array($type, ['date', 'datetime'], true)
+                    ? self::formatPayloadDate($item)
+                    : $item,
+                $value
+            );
+
             $result[$code] = count($value) === 1 ? $value[0] : $value;
         }
 
         return $result;
+    }
+
+    private static function formatPayloadDate($value)
+    {
+        if (!is_numeric($value)) {
+            return $value;
+        }
+
+        return date('Y-m-d H:i:s', (int)$value);
     }
 }
