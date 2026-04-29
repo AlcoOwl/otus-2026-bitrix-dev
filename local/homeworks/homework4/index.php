@@ -102,6 +102,17 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
         Ниже через связь <code>ManyToMany</code> показывается список форм, которые заполнял контакт. Если передать
         <code>form_id</code> или нажать рядом на кнопочку "Контакты формы", дополнительно выводятся контакты, которые заполняли выбранную форму.
     </p>
+
+    <p>
+        Для автоматического наполнения таблицы <code>link_form_result</code> добавлен обработчик события сохранения
+        записи в кастомную линковую таблицу. Регистрация обработчика находится в
+        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/events.php">/local/php_interface/events.php</a>,
+        а сама логика вынесена в
+        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/WebFormResultSync.php">WebFormResultSync</a>.<br>
+        Так как активити в таймлайне может появиться не одновременно с результатом формы, обработчик ставит агент с задержкой.
+        Агент проверяет наличие активити несколько раз, и если оно так и не найдено, записывает в <code>ACTIVITY_ID</code>
+        значение <code>-1</code> как технический признак незавершенной связки.
+    </p>
 </div>
 
 <div class="mb-4">
