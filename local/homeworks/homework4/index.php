@@ -66,7 +66,7 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
 <h4 class="mb-2">Пояснительная записка</h4>
 <div class="mb-4">
     <p>
-        В рамках задания создана таблица <code>link_form_result</code>, которая хранит индекс результатов заполнения
+        В рамках задания создана таблица <code>link_form_result</code>, которая хранит индексы результатов заполнения
         CRM-форм: <code>CONTACT_ID</code>, <code>RESULT_ID</code>, <code>ACTIVITY_ID</code>, <code>FORM_ID</code>,
         <code>CREATED_AT</code>.<br>
         Для таблицы описана ORM-модель
@@ -75,14 +75,25 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
     </p>
 
     <p>
-        Вместо учебных инфоблоков использованы стандартные ORM-сущности CRM. Сделано это было для того, чтобы наработки не пропали даром, а пошли в дело.
+        Вместо 2-3 тестовых инфоблоков использованы стандартные ORM-сущности CRM. Сделано это было для того, чтобы наработки не пропали даром, а пошли в дело.
         Давно хотел такой инструмент, с помощью которого можно было бы в удобном виде смотреть все заполнения форм, которые привязаны к контакту.
-        Помимо этого только для учебных целей через эту же кастомную модель связал контакты с формами, чтобы была связь many-to-many
+        Помимо этого только для учебных целей через эту же кастомную таблицу связал контакты с формами, чтобы была связь many-to-many
         Для этого расширил стандартные модели:
         <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/Models/ContactWebFormTable.php">ContactWebFormTable</a>
         и
         <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/Models/CrmWebFormTable.php">CrmWebFormTable</a>.<br>
         В них показаны связи <code>OneToMany</code> и <code>ManyToMany</code> через таблицу <code>link_form_result</code>.
+    </p>
+
+    <p>
+        В процессе работы также нашелся нюанс в стандартной ORM-модели
+        <code>Bitrix\Crm\WebForm\Internals\ResultTable</code>: поле <code>DATE_INSERT</code> в базе данных имеет тип
+        <code>datetime</code>, но в ORM-карте описано как <code>date</code>. Из-за этого при выборке через стандартную
+        модель терялось время и дата приходила с <code>00:00:00</code>.<br>
+        Чтобы не менять ядро Bitrix, была создана расширенная модель
+        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/Models/CrmWebFormResultTable.php">CrmWebFormResultTable</a>,
+        которая использует ту же таблицу <code>b_crm_webform_result</code>, но описывает <code>DATE_INSERT</code> как
+        <code>DatetimeField</code>.
     </p>
 
     <p>
