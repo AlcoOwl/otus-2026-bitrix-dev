@@ -105,7 +105,7 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
 </div>
 
 <div class="mb-4">
-    <h2><a href="/local/homeworks/homework4/webform_result_provider.php">Страница с демонстрацией функционала &rarr;</a></h2>
+    <h2><a href="/local/homeworks/homework4/webform_result_provider.php?contact_id=8">Страница с демонстрацией функционала &rarr;</a></h2>
 </div>
 
 <?php require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/footer.php"); ?>
