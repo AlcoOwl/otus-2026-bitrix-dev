@@ -105,7 +105,7 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
 
     <p>
         Для автоматического наполнения таблицы <code>link_form_result</code> добавлен обработчик события сохранения
-        записи в кастомную линковую таблицу. Регистрация обработчика находится в
+        записи в таблицу <code>b_crm_webform_result_entity</code>. Регистрация обработчика находится в
         <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/events.php">/local/php_interface/events.php</a>,
         а сама логика вынесена в
         <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/WebFormResultSync.php">WebFormResultSync</a>.<br>
