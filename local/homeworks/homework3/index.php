@@ -49,20 +49,6 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
     </div>
 </details>
 
-<details class="mb-4">
-    <summary><strong>Критерии оценки</strong></summary>
-    <div class="mt-3">
-        <ol>
-            <li>На отдельной странице будет представлен перечень специалистов, а при выборе конкретного врача будет
-                отображаться перечень доступных услуг. Для этого не требуется использование Ajax или SSR — достаточно
-                выполнить GET/POST-запросы к серверу.
-            </li>
-            <li>Реализован функционал на D7.
-            </li>
-        </ol>
-    </div>
-</details>
-
 <h4 class="mb-2">Пояснительная записка</h4>
 <div class="mb-4">
     <p>

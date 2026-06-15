@@ -6,7 +6,7 @@ require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/header.php");
 
 global $APPLICATION;
 
-$APPLICATION->SetTitle("ДЗ #4: Создание своих таблиц БД и написание модели данных к ним");
+$APPLICATION->SetTitle("ДЗ #4: Разработка собственного компонента");
 
 Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
 
@@ -16,21 +16,10 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
 <details class="mb-2">
     <summary><strong>Описание</strong></summary>
     <div class="mt-3">
-        <ol>
-            <li>
-                Создать таблицу в базе данных со следующими типами данных: числовой, строковый, связываемый;
-            </li>
-            <li>
-                Создать 2-3 инфоблока, описать для них модели данных и связать позиции по первичному ключу с созданной таблицей в БД;
-            </li>
-            <li>
-                Создать тестовую страницу для выборки и вывода данных в виде списка. При выборке из таблицы БД, выбрать
-                также свойства из элементов инфоблоков.
-            </li>
-            <li>
-                Использовать в запросах registerRuntimeField;
-            </li>
-        </ol>
+        <p>
+            Необходимо создать собственный компонент Bitrix, который получает валюту из параметров компонента
+            и выводит на странице текущий курс выбранной валюты.
+        </p>
     </div>
 </details>
 
@@ -38,27 +27,10 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
     <summary><strong>Требования</strong></summary>
     <div class="mt-3">
         <ol>
-            <li>Для каждого метода описывать PHPDoc (alt+enter на названии метода в PHPStorm -> Generate PHPDoc).</li>
-            <li>Использовать языковые фразы для написания текста в коде.</li>
-            <li>
-                При разработке стоит придерживаться базовых рекомендаций оформления кода от битрикс
-                <a href="https://dev.1c-bitrix.ru/docs/articles/develop/277171/">https://dev.1c-bitrix.ru/docs/articles
-                    /develop/277171/</a>.
-            </li>
-        </ol>
-    </div>
-</details>
-
-<details class="mb-4">
-    <summary><strong>Критерии оценки</strong></summary>
-    <div class="mt-3">
-        <ol>
-            <li>Созданы модели данных для таблиц и инфоблоков.
-            </li>
-            <li>Модель БД связана с моделями инфоблоков.
-            </li>
-            <li>Нет ошибок при выводе данных.
-            </li>
+            <li>Компонент должен иметь один параметр: выпадающий список выбора валюты.</li>
+            <li>Список валют должен формироваться из справочника валют, доступного по адресу <code>/bitrix/admin/currencies.php</code>.</li>
+            <li>Компонент должен передавать в шаблон текущий курс выбранной валюты из этого же справочника.</li>
+            <li>Компонент необходимо разместить на странице <code>/otus/currencies.php</code>.</li>
         </ol>
     </div>
 </details>
@@ -66,57 +38,26 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
 <h4 class="mb-2">Пояснительная записка</h4>
 <div class="mb-4">
     <p>
-        В рамках задания создана таблица <code>link_form_result</code>, которая хранит индексы результатов заполнения
-        CRM-форм: <code>CONTACT_ID</code>, <code>RESULT_ID</code>, <code>ACTIVITY_ID</code>, <code>FORM_ID</code>,
-        <code>CREATED_AT</code>.<br>
-        Для таблицы описана ORM-модель
-        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/Models/LinkResultFormTable.php">/local/php_interface/src/Models/LinkResultFormTable.php</a>.<br>
-        В модели настроены связи через <code>Reference</code> с контактом, результатом CRM-формы, активити и самой CRM-формой.
+        В рамках задания создан компонент
+        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/tree/main/local/components/otus/currency_check">/local/components/otus/currency_check</a>.
+        Описание компонента находится в файле <code>.description.php</code>, параметры выбора валюты описаны в
+        <code>.parameters.php</code>, а основная логика получения курса вынесена в <code>component.php</code>.
     </p>
 
     <p>
-        Вместо 2-3 тестовых инфоблоков использованы стандартные ORM-сущности CRM. Сделано это было для того, чтобы наработки не пропали даром, а пошли в дело.
-        Давно хотел такой инструмент, с помощью которого можно было бы в удобном виде смотреть все заполнения форм, которые привязаны к контакту.
-        Помимо этого только для учебных целей через эту же кастомную таблицу связал контакты с формами, чтобы была связь many-to-many
-        Для этого расширил стандартные модели:
-        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/Models/ContactWebFormTable.php">ContactWebFormTable</a>
-        и
-        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/Models/CrmWebFormTable.php">CrmWebFormTable</a>.<br>
-        В них показаны связи <code>OneToMany</code> и <code>ManyToMany</code> через таблицу <code>link_form_result</code>.
+        В параметрах компонента используется тип <code>LIST</code>. Значения списка собираются из модуля валют
+        через <code>CCurrency::GetList()</code>, поэтому администратор может выбрать любую валюту из справочника
+        <code>/bitrix/admin/currencies.php</code>.
     </p>
 
     <p>
-        В процессе работы также нашелся нюанс в стандартной ORM-модели
-        <code>Bitrix\Crm\WebForm\Internals\ResultTable</code>: поле <code>DATE_INSERT</code> в базе данных имеет тип
-        <code>datetime</code>, но в ORM-карте описано как <code>date</code>. Из-за этого при выборке через стандартную
-        модель терялось время и дата приходила с <code>00:00:00</code>.<br>
-        Чтобы не менять ядро Bitrix, была создана расширенная модель
-        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/Models/CrmWebFormResultTable.php">CrmWebFormResultTable</a>,
-        которая использует ту же таблицу <code>b_crm_webform_result</code>, но описывает <code>DATE_INSERT</code> как
-        <code>DatetimeField</code>.
-    </p>
-
-    <p>
-        На странице демонстрации выборка начинается от расширенной ORM-модели контакта. В URL параметре нужно передать <code>contact_id</code>.
-        По нему выводятся все результаты заполнения CRM-форм, данные результата, активити в таймлайне контакта и заполненные поля формы.<br>
-        Ниже через связь <code>ManyToMany</code> показывается список форм, которые заполнял контакт. Если передать
-        <code>form_id</code> или нажать рядом на кнопочку "Контакты формы", дополнительно выводятся контакты, которые заполняли выбранную форму.
-    </p>
-
-    <p>
-        Для автоматического наполнения таблицы <code>link_form_result</code> добавлен обработчик события сохранения
-        записи в таблицу <code>b_crm_webform_result_entity</code>. Регистрация обработчика находится в
-        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/events.php">/local/php_interface/events.php</a>,
-        а сама логика вынесена в
-        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/php_interface/src/WebFormResultSync.php">WebFormResultSync</a>.<br>
-        Так как активити в таймлайне может появиться не одновременно с результатом формы, обработчик ставит агент с задержкой.
-        Агент проверяет наличие активити несколько раз, и если оно так и не найдено, записывает в <code>ACTIVITY_ID</code>
-        значение <code>-1</code> как технический признак незавершенной связки.
+        Шаблон компонента <code>templates/.default/template.php</code> получает подготовленные данные через
+        <code>$arResult</code> и выводит код валюты, полное название, курс, курс за одну единицу и признак базовой валюты.
     </p>
 </div>
 
 <div class="mb-4">
-    <h2><a href="/local/homeworks/homework4/webform_result_provider.php?contact_id=8">Страница с демонстрацией функционала &rarr;</a></h2>
+    <h2><a href="/otus/currencies.php">Страница с демонстрацией функционала &rarr;</a></h2>
 </div>
 
 <?php require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/footer.php"); ?>

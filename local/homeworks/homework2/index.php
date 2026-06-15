@@ -47,16 +47,6 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
     </div>
 </details>
 
-<details class="mb-4">
-    <summary><strong>Критерии оценки</strong></summary>
-    <div class="mt-3">
-        <ol>
-            <li>Созданы файлы с кодом.</li>
-            <li>В логах отображается необходимая информация.</li>
-        </ol>
-    </div>
-</details>
-
 <h4 class="mb-2">Пояснительная записка</h4>
 <div class="mb-4">
     <p>

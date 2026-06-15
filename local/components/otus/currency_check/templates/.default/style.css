@@ -1,0 +1,45 @@
+.otus-currency-rate {
+    max-width: 560px;
+    padding: 20px;
+    border: 1px solid #d5dde7;
+    border-radius: 8px;
+    background: #fff;
+    color: #1f2937;
+}
+
+.otus-currency-rate__list {
+    margin: 0;
+}
+
+.otus-currency-rate__row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid #edf1f5;
+}
+
+.otus-currency-rate__row:last-child {
+    border-bottom: 0;
+}
+
+.otus-currency-rate__row dt {
+    color: #687385;
+}
+
+.otus-currency-rate__row dd {
+    margin: 0;
+    font-weight: 600;
+}
+
+.otus-currency-rate__row span {
+    display: block;
+    margin-top: 4px;
+    color: #687385;
+    font-size: 13px;
+    font-weight: 400;
+}
+
+.otus-currency-rate__error {
+    color: #b42318;
+}
