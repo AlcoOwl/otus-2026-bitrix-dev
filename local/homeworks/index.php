@@ -65,6 +65,7 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
                     <i class="icon"></i>
                 </h2>
             </li>
+
             <li>
                 <h2 class="item clock"><a href="homework5">ДЗ #5: Разработка собственного компонента</a>
                     <i class="icon"></i>
