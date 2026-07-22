@@ -2,6 +2,7 @@
 
 use Bitrix\Disk\File;
 use Bitrix\Main\Loader;
+use Bitrix\Main\Type\DateTime;
 
 const SHORT_RECORDING_COMMENT = 'Длительность разговора <10 сек. Расшифровке не подлежит.';
 const NO_RECORDING_COMMENT = 'Нет сохраненной записи разговора. Расшифровке не подлежит.';
@@ -11,30 +12,6 @@ require_once __DIR__ . '/functions.php';
 function loadEndCallConfig(): array
 {
     return \Airecogn\Config::getIntegrationConfig();
-}
-
-function writeEndCallLog(array $payload): void
-{
-    \Airecogn\Service\Logger::write(\Airecogn\Service\Logger::CHANNEL_END_CALL, $payload, (($payload['type'] ?? '') === 'error' ? 'error' : 'info'));
-}
-
-function writeEndCallError($message, array $context = array()): void
-{
-    $activityId = $context['activity_id'] ?? null;
-    unset($context['activity_id']);
-
-    $record = array(
-        'receivedAt' => date('Y-m-d H:i:s'),
-        'type' => 'error',
-        'message' => $message,
-        'context' => $context,
-    );
-    if (is_int($activityId) && $activityId > 0)
-    {
-        $record['activity_id'] = $activityId;
-    }
-
-    writeEndCallLog($record);
 }
 
 function getCrmActivityStorageElementId(array $activity): ?int
@@ -192,7 +169,12 @@ function requestNextcloudWebDav(string $method, string $webdavUrl, string $remot
     );
 }
 
-function uploadBitrixFileToNextcloud(array $fileInfo, array $config, array $data): array
+function uploadBitrixFileToNextcloud(
+    array $fileInfo,
+    array $config,
+    int $activityId,
+    ?DateTime $callStartDate
+): array
 {
     $nextcloud = is_array($config['nextcloud'] ?? null) ? $config['nextcloud'] : array();
     $webdavUrl = rtrim((string)($nextcloud['webdavUrl'] ?? ''), '/');
@@ -204,20 +186,18 @@ function uploadBitrixFileToNextcloud(array $fileInfo, array $config, array $data
         throw new RuntimeException('Nextcloud config is incomplete');
     }
 
-    $callDate = strtotime((string)($data['CALL_START_DATE'] ?? ''));
-    if ($callDate === false)
+    if ($callStartDate === null)
     {
-        throw new UnexpectedValueException('CALL_START_DATE has invalid format');
+        throw new UnexpectedValueException('CALL_START_DATE is missing in Voximplant statistic');
     }
 
     $remoteDirTemplate = (string)($nextcloud['remoteDir'] ?? '/Calls/{Y}/{m}');
     $remoteDir = strtr($remoteDirTemplate, array(
-        '{Y}' => date('Y', $callDate),
-        '{m}' => date('m', $callDate),
-        '{d}' => date('d', $callDate),
+        '{Y}' => $callStartDate->format('Y'),
+        '{m}' => $callStartDate->format('m'),
+        '{d}' => $callStartDate->format('d'),
     ));
 
-    $activityId = (string)$data['CRM_ACTIVITY_ID'];
     $extension = pathinfo((string)$fileInfo['name'], PATHINFO_EXTENSION);
     $remoteFileName = makeSafeRemoteFileName(
         $activityId . '_' . $fileInfo['storageElementId'] . ($extension !== '' ? '.' . $extension : '')
@@ -332,6 +312,24 @@ function buildShortRecordingActivityDescription(int $activityId, array $callLogI
 function buildNoRecordingActivityDescription(int $activityId, array $callLogInfo): string
 {
     return buildTechnicalActivityDescription($activityId, $callLogInfo, NO_RECORDING_COMMENT);
+}
+
+function buildNextcloudErrorActivityDescription(int $activityId, array $callLogInfo, string $error): string
+{
+    return buildTechnicalActivityDescription(
+        $activityId,
+        $callLogInfo,
+        'Ошибка подготовки или передачи записи в Nextcloud. Расшифровка не запущена. Причина: ' . $error
+    );
+}
+
+function buildProcessingErrorActivityDescription(int $activityId, array $callLogInfo, string $error): string
+{
+    return buildTechnicalActivityDescription(
+        $activityId,
+        $callLogInfo,
+        'Ошибка обработки записи разговора. Расшифровка не запущена. Причина: ' . $error
+    );
 }
 
 function rewriteCrmActivityDescription(int $activityId, array $callLogInfo, string $remotePath): bool

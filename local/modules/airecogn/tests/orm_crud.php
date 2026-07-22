@@ -103,6 +103,59 @@ try
     }
 
     echo "update to error: OK\n";
+
+    RecognitionResultRepository::savePending($testActivityId);
+    $retryRow = RecognitionResultTable::getRow([
+        'filter' => ['=ACTIVITY_ID' => $testActivityId],
+    ]);
+    if (!$retryRow
+        || (string)$retryRow['STATUS'] !== RecognitionResultRepository::STATUS_PENDING
+        || (string)$retryRow['SUMMARY'] !== ''
+        || $retryRow['PROCESSED_AT'] !== null)
+    {
+        throw new RuntimeException('Retry pending update was not saved correctly');
+    }
+
+    echo "retry error to pending: OK\n";
+
+    RecognitionResultRepository::save(
+        $testActivityId,
+        RecognitionResultRepository::STATUS_SKIPPED_NO_RECORDING,
+        'Нет записи'
+    );
+    $skippedRow = RecognitionResultTable::getRow([
+        'filter' => ['=ACTIVITY_ID' => $testActivityId],
+    ]);
+    if (!$skippedRow || (string)$skippedRow['STATUS'] !== RecognitionResultRepository::STATUS_SKIPPED_NO_RECORDING)
+    {
+        throw new RuntimeException('Skipped no recording update was not saved correctly');
+    }
+
+    RecognitionResultRepository::save(
+        $testActivityId,
+        RecognitionResultRepository::STATUS_SKIPPED_SHORT,
+        'Короткая запись'
+    );
+    $skippedRow = RecognitionResultTable::getRow([
+        'filter' => ['=ACTIVITY_ID' => $testActivityId],
+    ]);
+    if (!$skippedRow || (string)$skippedRow['STATUS'] !== RecognitionResultRepository::STATUS_SKIPPED_SHORT)
+    {
+        throw new RuntimeException('Skipped short update was not saved correctly');
+    }
+
+    echo "update skipped statuses: OK\n";
+
+    RecognitionResultRepository::savePending($testActivityId);
+    $retryRow = RecognitionResultTable::getRow([
+        'filter' => ['=ACTIVITY_ID' => $testActivityId],
+    ]);
+    if (!$retryRow || (string)$retryRow['STATUS'] !== RecognitionResultRepository::STATUS_PENDING)
+    {
+        throw new RuntimeException('Retry skipped to pending was not saved correctly');
+    }
+
+    echo "retry skipped to pending: OK\n";
 }
 finally
 {

@@ -12,6 +12,8 @@ final class RecognitionResultRepository
     public const STATUS_PENDING = 'pending';
     public const STATUS_SUCCESS = 'success';
     public const STATUS_ERROR = 'error';
+    public const STATUS_SKIPPED_NO_RECORDING = 'skipped_no_recording';
+    public const STATUS_SKIPPED_SHORT = 'skipped_short';
 
     public static function savePending(int $activityId): void
     {
@@ -21,10 +23,10 @@ final class RecognitionResultRepository
         }
 
         $existing = RecognitionResultTable::getRow([
-            'select' => ['ID'],
+            'select' => ['STATUS'],
             'filter' => ['=ACTIVITY_ID' => $activityId],
         ]);
-        if ($existing)
+        if ($existing && in_array((string)$existing['STATUS'], [self::STATUS_PENDING, self::STATUS_SUCCESS], true))
         {
             return;
         }
@@ -63,7 +65,13 @@ final class RecognitionResultRepository
         {
             throw new InvalidArgumentException('Activity ID must be a positive integer');
         }
-        if (!in_array($status, [self::STATUS_PENDING, self::STATUS_SUCCESS, self::STATUS_ERROR], true))
+        if (!in_array($status, [
+            self::STATUS_PENDING,
+            self::STATUS_SUCCESS,
+            self::STATUS_ERROR,
+            self::STATUS_SKIPPED_NO_RECORDING,
+            self::STATUS_SKIPPED_SHORT,
+        ], true))
         {
             throw new InvalidArgumentException('Unknown recognition status: ' . $status);
         }

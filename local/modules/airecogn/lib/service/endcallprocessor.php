@@ -2,7 +2,9 @@
 
 namespace Airecogn\Service;
 
+use Bitrix\Main\Type\DateTime;
 use Throwable;
+use UnexpectedValueException;
 
 final class EndCallProcessor
 {
@@ -10,266 +12,291 @@ final class EndCallProcessor
     {
         require_once dirname(__DIR__) . '/legacy/end_call_functions.php';
 
-        $activityId = $data['CRM_ACTIVITY_ID'] ?? null;
-        if (is_string($activityId) && preg_match('/^\d+$/', $activityId))
+        $activityId = self::normalizeActivityId($data['CRM_ACTIVITY_ID'] ?? null);
+        if ($activityId === null)
         {
-            $activityId = ltrim($activityId, '0');
-            $activityId = $activityId === '' ? false : filter_var($activityId, FILTER_VALIDATE_INT);
+            throw new UnexpectedValueException('CRM_ACTIVITY_ID must be a positive integer or digit string');
         }
-        if (!is_int($activityId) || $activityId <= 0)
-        {
-            throw new \UnexpectedValueException('CRM_ACTIVITY_ID must be a positive integer or digit string');
-        }
-        $data['CRM_ACTIVITY_ID'] = $activityId;
 
-        $basePayload = array(
-            'receivedAt' => date('Y-m-d H:i:s'),
-            'CALL_START_DATE' => $data['CALL_START_DATE'] ?? null,
-            'activity_id' => $activityId,
-        );
-        
-        writeEndCallLog($basePayload);
-        
-        $activity = null;
-        $config = null;
-        $callLogInfo = array();
-        $oracleSaved = null;
-        $oracleError = null;
-        $storageElementId = null;
-        $fileInfo = null;
-        $uploadResult = null;
-        $nextcloudError = null;
-        $activityDescriptionUpdated = null;
-        $activityDescriptionError = null;
-        $recordSeconds = null;
-        $isShortRecording = false;
-        $hasSavedRecording = false;
-        
         try
         {
             $activity = getCrmActivity($activityId);
         }
         catch (Throwable $throwable)
         {
-            writeEndCallError('CRM activity read exception', array(
-                'activity_id' => $activityId,
-                'exception' => get_class($throwable),
-                'message' => $throwable->getMessage(),
-                'file' => $throwable->getFile(),
-                'line' => $throwable->getLine(),
-            ));
+            self::writeFatal($activityId, 'activity', $throwable);
             throw $throwable;
         }
-        
+
+        $config = null;
+        $configError = null;
+        $failure = null;
         try
         {
             $config = loadEndCallConfig();
         }
         catch (Throwable $throwable)
         {
-            writeEndCallError('End call config exception', array(
-                'activity_id' => $activityId,
-                'exception' => get_class($throwable),
-                'message' => $throwable->getMessage(),
-            ));
-            throw $throwable;
+            $configError = 'Ошибка загрузки конфигурации: ' . $throwable->getMessage();
+            $failure = self::makeFailure('config', $throwable);
         }
-        
-        if (is_array($activity))
+
+        $storageElementId = getCrmActivityStorageElementId($activity);
+        $hasSavedRecording = $storageElementId !== null;
+        $callStartDate = null;
+        $recordSeconds = null;
+        $callDataError = null;
+        $callLogInfo = self::emptyCallLogInfo(null);
+
+        try
         {
-            $storageElementId = getCrmActivityStorageElementId($activity);
-            $hasSavedRecording = $storageElementId !== null;
-        
-            try
+            $statistic = getVoximplantStatistic($activityId);
+            $callStartDate = $statistic['CALL_START_DATE'] ?? null;
+            $recordSeconds = getRecordDurationSeconds($statistic);
+            $callLogInfo = self::emptyCallLogInfo($recordSeconds, (string)($statistic['CALL_LOG'] ?? ''));
+
+            if ($hasSavedRecording && $recordSeconds === null)
             {
-                $statistic = getVoximplantStatistic($activityId);
-                $recordSeconds = getRecordDurationSeconds($statistic);
-                $isShortRecording = $recordSeconds !== null && $recordSeconds < 11;
-        
-                if (!$hasSavedRecording || $isShortRecording)
-                {
-                    $callLogInfo = array(
-                        'callLogUrl' => trim((string)($statistic['CALL_LOG'] ?? '')),
-                        'transferRoute' => array(),
-                        'oracleRouteItems' => array(),
-                        'transferResult' => '',
-                        'callMetrics' => array('recordSeconds' => $recordSeconds),
-                        'callUsers' => array('first' => '', 'last' => ''),
-                    );
-                }
-                else
-                {
-                    $callLogInfo = buildCallLogInfo($activityId, $activity, $statistic);
-                }
+                $callDataError = 'Не удалось определить длительность записи разговора';
+                $failure = array('stage' => 'duration', 'type' => null, 'message' => $callDataError);
             }
-            catch (Throwable $throwable)
+            elseif ($hasSavedRecording && $recordSeconds >= 11)
             {
-                writeEndCallError('Call log processing exception', array(
-                    'activity_id' => $activityId,
-                    'exception' => get_class($throwable),
-                    'message' => $throwable->getMessage(),
-                ));
-            }
-        
-            if (is_array($config))
-            {
-                try
-                {
-                    $oracleSaved = saveOracleActivity(
-                        $config,
-                        array(
-                            'call_id' => $activityId,
-                            'call_status' => !$hasSavedRecording
-                                ? 'skipped_no_recording'
-                                : ($isShortRecording ? 'skipped_short' : 'pending'),
-                            'summary' => !$hasSavedRecording
-                                ? NO_RECORDING_COMMENT
-                                : ($isShortRecording ? SHORT_RECORDING_COMMENT : ''),
-                            'questions' => array(),
-                        ),
-                        $activity,
-                        (string)($callLogInfo['transferResult'] ?? ''),
-                        $callLogInfo['callMetrics'] ?? array(),
-                        $callLogInfo['callUsers'] ?? array(),
-                        (string)($callLogInfo['callLogUrl'] ?? ''),
-                        $callLogInfo['oracleRouteItems'] ?? array()
-                    );
-        
-                }
-                catch (Throwable $throwable)
-                {
-                    $oracleError = $throwable->getMessage();
-                    writeEndCallError('Oracle base activity save exception', array(
-                        'activity_id' => $activityId,
-                        'exception' => get_class($throwable),
-                        'message' => $throwable->getMessage(),
-                    ));
-                }
+                $callLogInfo = buildCallLogInfo($activityId, $activity, $statistic);
             }
         }
-        
-        if (!$hasSavedRecording && is_array($activity))
+        catch (Throwable $throwable)
         {
-            try
-            {
-                $activityDescriptionUpdated = updateCrmActivityDescription(
-                    $activityId,
-                    buildNoRecordingActivityDescription($activityId, $callLogInfo)
-                );
-            }
-            catch (Throwable $throwable)
-            {
-                $activityDescriptionError = $throwable->getMessage();
-                writeEndCallError('Missing recording activity description update exception', array(
-                    'activity_id' => $activityId,
-                    'exception' => get_class($throwable),
-                    'message' => $throwable->getMessage(),
-                ));
-            }
+            $callDataError = 'Ошибка получения данных звонка: ' . $throwable->getMessage();
+            $failure = self::makeFailure('call_data', $throwable);
         }
-        elseif ($isShortRecording)
+
+        $status = RecognitionResultRepository::STATUS_ERROR;
+        $summary = '';
+        $description = '';
+        $fileInfo = null;
+        $uploadResult = null;
+        $nextcloudError = null;
+
+        if (!$hasSavedRecording)
         {
-            try
-            {
-                $activityDescriptionUpdated = updateCrmActivityDescription(
-                    $activityId,
-                    buildShortRecordingActivityDescription($activityId, $callLogInfo)
-                );
-            }
-            catch (Throwable $throwable)
-            {
-                $activityDescriptionError = $throwable->getMessage();
-                writeEndCallError('Short recording activity description update exception', array(
-                    'activity_id' => $activityId,
-                    'RECORD_SECONDS' => $recordSeconds,
-                    'exception' => get_class($throwable),
-                    'message' => $throwable->getMessage(),
-                ));
-            }
+            $status = RecognitionResultRepository::STATUS_SKIPPED_NO_RECORDING;
+            $summary = NO_RECORDING_COMMENT;
+            $description = buildNoRecordingActivityDescription($activityId, $callLogInfo);
+        }
+        elseif ($recordSeconds !== null && $recordSeconds < 11)
+        {
+            $status = RecognitionResultRepository::STATUS_SKIPPED_SHORT;
+            $summary = SHORT_RECORDING_COMMENT;
+            $description = buildShortRecordingActivityDescription($activityId, $callLogInfo);
+        }
+        elseif ($callDataError !== null || $configError !== null)
+        {
+            $summary = $callDataError ?? $configError;
+            $description = buildProcessingErrorActivityDescription($activityId, $callLogInfo, $summary);
         }
         else
         {
-            if ($storageElementId !== null && is_array($config))
+            try
             {
-                try
-                {
-                    $fileInfo = getBitrixDiskFileInfo($storageElementId);
-                    $uploadResult = uploadBitrixFileToNextcloud($fileInfo, $config, $data);
-                }
-                catch (Throwable $throwable)
-                {
-                    $nextcloudError = $throwable->getMessage();
-                    writeEndCallError('Nextcloud upload exception', array(
-                        'activity_id' => $activityId,
-                        'STORAGE_ELEMENT_ID' => $storageElementId,
-                        'exception' => get_class($throwable),
-                        'message' => $throwable->getMessage(),
-                    ));
-                }
+                $fileInfo = getBitrixDiskFileInfo($storageElementId);
+                $uploadResult = uploadBitrixFileToNextcloud(
+                    $fileInfo,
+                    $config,
+                    $activityId,
+                    $callStartDate instanceof DateTime ? $callStartDate : null
+                );
+                $status = RecognitionResultRepository::STATUS_PENDING;
             }
-        
-            if (is_array($uploadResult))
+            catch (Throwable $throwable)
             {
-                try
-                {
-                    \Airecogn\Service\RecognitionResultRepository::savePending($activityId);
-                }
-                catch (Throwable $throwable)
-                {
-                    writeEndCallError('Recognition result pending save exception', array(
-                        'activity_id' => $activityId,
-                        'message' => $throwable->getMessage(),
-                    ));
-                }
-        
-                try
-                {
-                    $activityDescriptionUpdated = rewriteCrmActivityDescription(
-                        $activityId,
-                        $callLogInfo,
-                        (string)$uploadResult['remotePath']
-                    );
-                }
-                catch (Throwable $throwable)
-                {
-                    $activityDescriptionError = $throwable->getMessage();
-                    writeEndCallError('CRM activity description update exception', array(
-                        'activity_id' => $activityId,
-                        'exception' => get_class($throwable),
-                        'message' => $throwable->getMessage(),
-                    ));
-                }
+                $nextcloudError = $throwable->getMessage();
+                $summary = 'Ошибка подготовки или передачи записи в Nextcloud: ' . $nextcloudError;
+                $description = buildNextcloudErrorActivityDescription($activityId, $callLogInfo, $nextcloudError);
+                $failure = self::makeFailure('nextcloud', $throwable);
             }
         }
-        
-        writeEndCallLog(array(
-            'receivedAt' => date('Y-m-d H:i:s'),
+
+        [$localSaved, $localError] = self::saveLocalOutcome($activityId, $status, $summary);
+        [$oracleSaved, $oracleError] = self::saveOracleOutcome(
+            $config,
+            $activityId,
+            $status,
+            $summary,
+            $activity,
+            $callLogInfo
+        );
+        $oracleError = $oracleError ?? ($config === null ? $configError : null);
+
+        $activityDescriptionUpdated = null;
+        $activityDescriptionError = null;
+        try
+        {
+            $activityDescriptionUpdated = $status === RecognitionResultRepository::STATUS_PENDING
+                ? rewriteCrmActivityDescription($activityId, $callLogInfo, (string)$uploadResult['remotePath'])
+                : updateCrmActivityDescription($activityId, $description);
+        }
+        catch (Throwable $throwable)
+        {
+            $activityDescriptionError = $throwable->getMessage();
+        }
+
+        Logger::write(Logger::CHANNEL_END_CALL, array(
+            'type' => 'result',
+            'message' => 'Итог обработки: ' . $status,
             'activity_id' => $activityId,
-            'CALL_LOG_URL' => $callLogInfo['callLogUrl'] ?? null,
-            'CALL_METRICS' => $callLogInfo['callMetrics'] ?? array(),
-            'TRANSFER_ROUTE' => $callLogInfo['transferRoute'] ?? array(),
-            'SHORT_RECORDING_SKIPPED' => $isShortRecording && $hasSavedRecording,
-            'NO_RECORDING_SKIPPED' => !$hasSavedRecording && is_array($activity),
-            'SAVED_RECORDING_EXISTS' => $hasSavedRecording,
-            'ORACLE_SAVED' => $oracleSaved,
-            'ORACLE_ERROR' => $oracleError,
-            'STORAGE_ELEMENT_ID' => $storageElementId,
-            'BITRIX_FILE_ID' => is_array($fileInfo) ? $fileInfo['fileId'] : null,
-            'BITRIX_FILE_NAME' => is_array($fileInfo) ? $fileInfo['name'] : null,
-            'NEXTCLOUD_REMOTE_PATH' => is_array($uploadResult) ? $uploadResult['remotePath'] : null,
-            'NEXTCLOUD_HTTP_CODE' => is_array($uploadResult) ? $uploadResult['httpCode'] : null,
-            'NEXTCLOUD_ERROR' => $nextcloudError,
-            'CRM_ACTIVITY_DESCRIPTION_UPDATED' => $activityDescriptionUpdated,
-            'CRM_ACTIVITY_DESCRIPTION_ERROR' => $activityDescriptionError,
-        ));
-        
+            'status' => $status,
+            'summary' => $summary,
+            'call' => array(
+                'started_at' => $callStartDate instanceof DateTime ? $callStartDate->format(DATE_ATOM) : null,
+                'record_seconds' => $recordSeconds,
+                'log_url' => $callLogInfo['callLogUrl'],
+                'transfer_route' => $callLogInfo['transferRoute'],
+                'metrics' => $callLogInfo['callMetrics'],
+            ),
+            'recording' => array(
+                'exists' => $hasSavedRecording,
+                'storage_element_id' => $storageElementId,
+                'file_id' => is_array($fileInfo) ? $fileInfo['fileId'] : null,
+                'file_name' => is_array($fileInfo) ? $fileInfo['name'] : null,
+            ),
+            'nextcloud' => array(
+                'remote_path' => is_array($uploadResult) ? $uploadResult['remotePath'] : null,
+                'http_code' => is_array($uploadResult) ? $uploadResult['httpCode'] : null,
+            ),
+            'persistence' => array(
+                'local_saved' => $localSaved,
+                'local_error' => $localError,
+                'oracle_saved' => $oracleSaved,
+                'oracle_error' => $oracleError,
+                'activity_description_updated' => $activityDescriptionUpdated,
+                'activity_description_error' => $activityDescriptionError,
+            ),
+            'error' => $status === RecognitionResultRepository::STATUS_ERROR ? $failure : null,
+        ), $status === RecognitionResultRepository::STATUS_ERROR
+            || $localError !== null
+            || $oracleError !== null
+            || $activityDescriptionError !== null
+                ? 'error'
+                : 'info');
+
         return array(
-            'status' => 'ok',
+            'status' => $status === RecognitionResultRepository::STATUS_ERROR ? 'error' : 'ok',
             'activityId' => $activityId,
+            'resultStatus' => $status,
             'recordingUploaded' => is_array($uploadResult),
-            'recognitionPending' => is_array($uploadResult),
             'nextcloudError' => $nextcloudError,
             'activityDescriptionError' => $activityDescriptionError,
         );
+    }
+
+    private static function normalizeActivityId($value): ?int
+    {
+        if (is_int($value) && $value > 0)
+        {
+            return $value;
+        }
+        if (!is_string($value) || !preg_match('/^\d+$/', $value))
+        {
+            return null;
+        }
+
+        $digits = ltrim($value, '0');
+        $activityId = $digits === '' ? false : filter_var($digits, FILTER_VALIDATE_INT);
+
+        return $activityId === false ? null : $activityId;
+    }
+
+    private static function emptyCallLogInfo(?int $recordSeconds, string $callLogUrl = ''): array
+    {
+        return array(
+            'callLogUrl' => trim($callLogUrl),
+            'transferRoute' => array(),
+            'oracleRouteItems' => array(),
+            'transferResult' => '',
+            'callMetrics' => array('recordSeconds' => $recordSeconds),
+            'callUsers' => array('first' => '', 'last' => ''),
+        );
+    }
+
+    private static function saveLocalOutcome(int $activityId, string $status, string $summary): array
+    {
+        try
+        {
+            if ($status === RecognitionResultRepository::STATUS_PENDING)
+            {
+                RecognitionResultRepository::savePending($activityId);
+            }
+            else
+            {
+                RecognitionResultRepository::save($activityId, $status, $summary);
+            }
+
+            return array(true, null);
+        }
+        catch (Throwable $throwable)
+        {
+            return array(false, $throwable->getMessage());
+        }
+    }
+
+    private static function saveOracleOutcome(
+        ?array $config,
+        int $activityId,
+        string $status,
+        string $summary,
+        array $activity,
+        array $callLogInfo
+    ): array
+    {
+        if ($config === null)
+        {
+            return array(null, null);
+        }
+
+        try
+        {
+            return array(
+                saveOracleActivity(
+                    $config,
+                    array(
+                        'call_id' => $activityId,
+                        'call_status' => $status,
+                        'summary' => $summary,
+                        'questions' => array(),
+                    ),
+                    $activity,
+                    (string)$callLogInfo['transferResult'],
+                    $callLogInfo['callMetrics'],
+                    $callLogInfo['callUsers'],
+                    (string)$callLogInfo['callLogUrl'],
+                    $callLogInfo['oracleRouteItems']
+                ),
+                null,
+            );
+        }
+        catch (Throwable $throwable)
+        {
+            return array(null, $throwable->getMessage());
+        }
+    }
+
+    private static function makeFailure(string $stage, Throwable $throwable): array
+    {
+        return array(
+            'stage' => $stage,
+            'type' => get_class($throwable),
+            'message' => $throwable->getMessage(),
+        );
+    }
+
+    private static function writeFatal(int $activityId, string $stage, Throwable $throwable): void
+    {
+        Logger::write(Logger::CHANNEL_END_CALL, array(
+            'type' => 'fatal',
+            'message' => $throwable->getMessage(),
+            'activity_id' => $activityId,
+            'error' => self::makeFailure($stage, $throwable),
+        ), 'error');
     }
 }

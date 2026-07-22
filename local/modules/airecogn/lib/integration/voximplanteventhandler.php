@@ -24,9 +24,10 @@ final class VoximplantEventHandler
         $callData['CRM_ACTIVITY_ID'] = $activityId;
 
         Logger::write(Logger::CHANNEL_END_CALL, [
-            'type' => 'event_queued',
+            'type' => 'queued',
+            'message' => 'Звонок поставлен в очередь обработки',
             'activity_id' => $activityId,
-            'CALL_ID' => $callData['CALL_ID'] ?? null,
+            'call_id' => $callData['CALL_ID'] ?? null,
         ]);
 
         Application::getInstance()->addBackgroundJob(

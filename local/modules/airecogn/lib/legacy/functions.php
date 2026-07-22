@@ -201,7 +201,7 @@ function getVoximplantStatistic(int $activityId): array
     }
 
     $result = Bitrix\Voximplant\StatisticTable::getList(array(
-        'select' => array('ID', 'CALL_LOG', 'RECORD_DURATION'),
+        'select' => array('ID', 'CALL_LOG', 'RECORD_DURATION', 'CALL_START_DATE'),
         'filter' => array('=CRM_ACTIVITY_ID' => $activityId),
         'order' => array('ID' => 'DESC'),
         'limit' => 1,

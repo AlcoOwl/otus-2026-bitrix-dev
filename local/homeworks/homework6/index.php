@@ -50,6 +50,27 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
     </div>
 </details>
 
+<h4 class="mb-2">Реализация</h4>
+<div class="mb-4">
+    <p>
+        Для задания разрабатывается устанавливаемый модуль <code>airecogn</code>, который обрабатывает
+        внутреннее событие завершения звонка <code>voximplant:onCallEnd</code> и входящий результат
+        AI-распознавания. Модуль создаёт таблицу
+        <code>b_airecogn_result</code> и хранит в ней ID CRM-активити, статус
+        <code>pending</code>, <code>success</code> или <code>erorr</code>, а также краткое содержание звонка.
+    </p>
+    <p>
+        Обработчик события <code>onEntityDetailsTabsInitialized</code> добавляет в карточку контакта
+        вкладку со стандартным <code>main.ui.grid</code> и отдельную административную вкладку просмотра логов.
+        Связь результата с контактом определяется через привязки CRM-активити.
+    </p>
+    <ul>
+        <li><code>/local/modules/airecogn</code> — исходный код модуля;</li>
+        <li><code>Airecogn\Integration\VoximplantEventHandler</code> — обработчик завершения звонка;</li>
+        <li><code>/local/handler/airecogn/inbound/index.php</code> — устанавливаемая точка результата распознавания.</li>
+    </ul>
+</div>
+
 <h4 class="mb-2">Статус выполнения</h4>
 <p class="text-warning-emphasis">Работа в процессе.</p>
 
