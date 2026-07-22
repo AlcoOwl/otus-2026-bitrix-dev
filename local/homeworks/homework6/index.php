@@ -13,7 +13,7 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
 ?>
 <h1 class="mb-4"><?php $APPLICATION->ShowTitle() ?></h1>
 
-<details class="mb-2" open>
+<details class="mb-2">
     <summary><strong>Цель</strong></summary>
     <div class="mt-3">
         <ul>
@@ -25,7 +25,7 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
     </div>
 </details>
 
-<details class="mb-2" open>
+<details class="mb-2">
     <summary><strong>Описание</strong></summary>
     <div class="mt-3">
         <p>
@@ -35,7 +35,7 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
     </div>
 </details>
 
-<details class="mb-4" open>
+<details class="mb-4">
     <summary><strong>Пошаговая инструкция</strong></summary>
     <div class="mt-3">
         <ol>
@@ -50,28 +50,54 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
     </div>
 </details>
 
-<h4 class="mb-2">Реализация</h4>
+<h4 class="mb-2">Пояснительная записка</h4>
 <div class="mb-4">
     <p>
-        Для задания разрабатывается устанавливаемый модуль <code>airecogn</code>, который обрабатывает
-        внутреннее событие завершения звонка <code>voximplant:onCallEnd</code> и входящий результат
-        AI-распознавания. Модуль создаёт таблицу
-        <code>b_airecogn_result</code> и хранит в ней ID CRM-активити, статус
-        <code>pending</code>, <code>success</code> или <code>erorr</code>, а также краткое содержание звонка.
+        В рамках задания был написан устанавливаемый D7-модуль
+        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/tree/main/local/modules/airecogn">/local/modules/airecogn</a>.
+        Вместо тестовой таблицы и абстрактных данных модуль решает реальную задачу: обрабатывает записи телефонных
+        звонков, передаёт их на распознавание и показывает полученные результаты в карточке CRM-контакта.
     </p>
+
     <p>
-        Обработчик события <code>onEntityDetailsTabsInitialized</code> добавляет в карточку контакта
-        вкладку со стандартным <code>main.ui.grid</code> и отдельную административную вкладку просмотра логов.
-        Связь результата с контактом определяется через привязки CRM-активити.
+        При установке модуль создаёт таблицу <code>b_airecogn_result</code>. В ней хранятся ID активити,
+        статус обработки, краткое содержание и даты создания, изменения и завершения обработки.<br>
+        Таблица описана ORM-моделью <code>Airecogn\Model\RecognitionResultTable</code>. Работа с добавлением и
+        обновлением результатов вынесена в <code>Airecogn\Service\RecognitionResultRepository</code>.
     </p>
-    <ul>
-        <li><code>/local/modules/airecogn</code> — исходный код модуля;</li>
-        <li><code>Airecogn\Integration\VoximplantEventHandler</code> — обработчик завершения звонка;</li>
-        <li><code>/local/handler/airecogn/inbound/index.php</code> — устанавливаемая точка результата распознавания.</li>
-    </ul>
+
+    <p>
+        Компонент <code>airecogn:recognition.grid</code> получает результаты из этой таблицы и выводит их через
+        стандартный компонент <code>bitrix:main.ui.grid</code>. Связь результата с текущим контактом строится по
+        ID активити через стандартную таблицу привязок CRM <code>b_crm_act_bind</code>. Фильтрация, подсчёт строк
+        и пагинация выполняются на уровне ORM-запроса, а грид поддерживает AJAX-переключение страниц.
+    </p>
+
+    <p>
+        Обработчик события <code>crm:onEntityDetailsTabsInitialized</code> добавляет в карточку контакта вкладку
+        «Распознавание звонков» с разработанным компонентом. Для администратора дополнительно выводится вкладка
+        «Логи распознавания». Параметры компонентов подписываются стандартными средствами CRM и проверяются
+        в AJAX-обработчике вкладок.
+    </p>
+
+    <p>
+        Помимо минимальных требований ДЗ модуль подписывается на событие завершения звонка
+        <code>voximplant:onCallEnd</code>, проверяет наличие и длительность записи, загружает подходящий файл
+        в Nextcloud и принимает результат распознавания через собственный inbound endpoint. Результат сохраняется
+        в локальную таблицу и, если интеграция включена, в Oracle. Описание соответствующей активити обновляется
+        на каждом итоговом этапе обработки.
+    </p>
+
+    <p>
+        В модуле реализованы установка и удаление таблицы, регистрация и снятие обработчиков событий, копирование
+        компонентов и публичных обработчиков, страница настроек и локализация служебных страниц. Подробное описание
+        структуры, настроек и сценариев работы находится в
+        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/modules/airecogn/README.md">README модуля</a>.
+    </p>
 </div>
 
-<h4 class="mb-2">Статус выполнения</h4>
-<p class="text-warning-emphasis">Работа в процессе.</p>
+<div class="mb-4">
+    <h2><a href="/crm/contact/list/">Открыть список контактов для демонстрации &rarr;</a></h2>
+</div>
 
 <?php require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/footer.php"); ?>
