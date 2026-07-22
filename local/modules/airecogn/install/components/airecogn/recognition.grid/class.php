@@ -103,16 +103,11 @@ class AirecognRecognitionGridComponent extends CBitrixComponent
 
         foreach ($items as $item)
         {
-            $activityId = (int)$item['ACTIVITY_ID'];
-            $activityUrl = $contactUrl !== ''
-                ? $contactUrl . '?focusedActivityId=' . $activityId
-                : '#';
-
             $rows[] = [
                 'id' => (int)$item['ID'],
                 'data' => $item,
                 'columns' => [
-                    'ACTIVITY_ID' => '<a href="' . htmlspecialcharsbx($activityUrl) . '">' . $activityId . '</a>',
+                    'ACTIVITY_ID' => (int)$item['ACTIVITY_ID'],
                     'CONTACT' => $contactUrl !== ''
                         ? '<a href="' . htmlspecialcharsbx($contactUrl) . '">' . htmlspecialcharsbx($contactTitle ?: ('Контакт #' . $contactId)) . '</a>'
                         : '',

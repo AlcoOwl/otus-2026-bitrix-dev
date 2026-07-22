@@ -93,7 +93,7 @@ final class EndCallProcessor
         elseif ($callDataError !== null || $configError !== null)
         {
             $summary = $callDataError ?? $configError;
-            $description = buildProcessingErrorActivityDescription($activityId, $callLogInfo, $summary);
+            $description = buildErrorActivityDescription($activityId, $callLogInfo, $summary);
         }
         else
         {
@@ -112,7 +112,7 @@ final class EndCallProcessor
             {
                 $nextcloudError = $throwable->getMessage();
                 $summary = 'Ошибка подготовки или передачи записи в Nextcloud: ' . $nextcloudError;
-                $description = buildNextcloudErrorActivityDescription($activityId, $callLogInfo, $nextcloudError);
+                $description = buildErrorActivityDescription($activityId, $callLogInfo, $summary);
                 $failure = self::makeFailure('nextcloud', $throwable);
             }
         }

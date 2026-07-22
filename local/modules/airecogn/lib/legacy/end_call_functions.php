@@ -314,21 +314,15 @@ function buildNoRecordingActivityDescription(int $activityId, array $callLogInfo
     return buildTechnicalActivityDescription($activityId, $callLogInfo, NO_RECORDING_COMMENT);
 }
 
-function buildNextcloudErrorActivityDescription(int $activityId, array $callLogInfo, string $error): string
+function buildErrorActivityDescription(int $activityId, array $callLogInfo, string $summary): string
 {
     return buildTechnicalActivityDescription(
         $activityId,
         $callLogInfo,
-        'Ошибка подготовки или передачи записи в Nextcloud. Расшифровка не запущена. Причина: ' . $error
-    );
-}
-
-function buildProcessingErrorActivityDescription(int $activityId, array $callLogInfo, string $error): string
-{
-    return buildTechnicalActivityDescription(
-        $activityId,
-        $callLogInfo,
-        'Ошибка обработки записи разговора. Расшифровка не запущена. Причина: ' . $error
+        buildRecognitionErrorBlock(array(
+            'call_status' => 'error',
+            'summary' => $summary,
+        ))
     );
 }
 
