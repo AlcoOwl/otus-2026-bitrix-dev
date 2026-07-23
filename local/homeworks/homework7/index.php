@@ -124,12 +124,12 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
 
 <div class="mb-4">
     <h2>
-        <a href="/bitrix/admin/iblock_admin.php?IBLOCK_ID=20&amp;type=lists&amp;lang=ru&amp;find_section_section=0">
+        <a href="/bitrix/admin/iblock_list_admin.php?IBLOCK_ID=20&amp;type=lists&amp;lang=ru&amp;find_section_section=0">
             Открыть список врачей для демонстрации &rarr;
         </a>
     </h2>
     <p>
-        <a href="/bitrix/admin/iblock_admin.php?IBLOCK_ID=22&amp;type=lists&amp;lang=ru&amp;find_section_section=0">
+        <a href="/bitrix/admin/iblock_list_admin.php?IBLOCK_ID=22&amp;type=lists&amp;lang=ru&amp;find_section_section=0">
             Открыть созданные бронирования
         </a>
     </p>
