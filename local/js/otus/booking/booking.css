@@ -1,0 +1,28 @@
+.otus-booking-popup {
+    width: 360px;
+}
+
+.otus-booking-popup__procedure {
+    margin: 0 0 4px;
+}
+
+.otus-booking-popup__duration {
+    margin: 0 0 16px;
+}
+
+.otus-booking-popup__field {
+    margin-bottom: 16px;
+}
+
+.otus-booking-popup__datetime {
+    display: flex;
+}
+
+.otus-booking-popup__hour {
+    width: 100px;
+    flex: none;
+}
+
+.otus-booking-popup__result {
+    margin-top: 12px;
+}

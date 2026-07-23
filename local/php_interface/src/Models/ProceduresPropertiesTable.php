@@ -11,6 +11,11 @@ class ProceduresPropertiesTable extends AbstractIblockPropertyValuesTable
             'code' => 'PRICE',
             'type' => 'integer',
             'multiple' => false,
-        ]
+        ],
+        'DURATION' => [
+            'code' => 'DURATION',
+            'type' => 'integer',
+            'multiple' => false,
+        ],
     ];
 }
