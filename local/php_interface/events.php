@@ -5,6 +5,7 @@ use Bitrix\Main\EventManager;
 use Bitrix\Main\Loader;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\EventManager as OrmEventManager;
+use Bitrix\Main\UI\Extension;
 use Otus\Iblock\Property\BookingProperty;
 
 $eventManager = EventManager::getInstance();
@@ -27,3 +28,4 @@ if (Loader::includeModule('crm')) {
         ['Otus\WebFormResultSync', 'onAfterResultEntityAdd']
     );
 }
+Extension::load('otus.timeman-confirm');

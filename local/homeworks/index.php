@@ -82,7 +82,7 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
                 </h2>
             </li>
             <li>
-                <h2 class="item"><a href="homework8">ДЗ #8: Учимся подключать свои скрипты, взаимодействовать с компонентами из фронтенда</a>
+                <h2 class="item clock"><a href="homework8">ДЗ #8: Модификация интерфейса на стороне клиента</a>
                     <i class="icon"></i>
                 </h2>
             </li>

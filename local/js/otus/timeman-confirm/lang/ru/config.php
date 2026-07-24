@@ -1,0 +1,7 @@
+<?php
+
+$MESS['OTUS_TIMEMAN_CONFIRM_TITLE'] = 'Рабочий день';
+$MESS['OTUS_TIMEMAN_CONFIRM_TEXT'] = 'Вы уверены?';
+$MESS['OTUS_TIMEMAN_START_BUTTON'] = 'Начать';
+$MESS['OTUS_TIMEMAN_CONTINUE_BUTTON'] = 'Продолжить';
+$MESS['OTUS_TIMEMAN_CANCEL_BUTTON'] = 'Отмена';
