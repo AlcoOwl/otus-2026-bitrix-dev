@@ -54,7 +54,9 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
 <div class="mb-4">
     <p>
         В рамках задания был написан устанавливаемый D7-модуль
-        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/tree/main/local/modules/airecogn">/local/modules/airecogn</a>.
+        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/tree/main/local/modules/alcoowl.airecogn">/local/modules/alcoowl.airecogn</a>
+        с идентификатором <code>alcoowl.airecogn</code>. Модуль устанавливается в разделе
+        <a href="/bitrix/admin/partner_modules.php?lang=ru">«Кастомные решения»</a>.
         Вместо тестовой таблицы и абстрактных данных модуль решает реальную задачу: обрабатывает записи телефонных
         звонков, передаёт их на распознавание и показывает полученные результаты в карточке CRM-контакта.
     </p>
@@ -92,7 +94,7 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
         В модуле реализованы установка и удаление таблицы, регистрация и снятие обработчиков событий, копирование
         компонентов и публичных обработчиков, страница настроек и локализация служебных страниц. Подробное описание
         структуры, настроек и сценариев работы находится в
-        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/modules/airecogn/README.md">README модуля</a>.
+        <a href="https://github.com/AlcoOwl/otus-2026-bitrix-dev/blob/main/local/modules/alcoowl.airecogn/README.md">README модуля</a>.
     </p>
 </div>
 
